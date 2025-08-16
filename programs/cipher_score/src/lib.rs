@@ -1,3 +1,5 @@
+pub mod errors;
+
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
@@ -6,6 +8,8 @@ const COMP_DEF_OFFSET_SHARE: u32 = comp_def_offset("calculate_and_share_score");
 const UPDATE_COOLDOWN: i64 = 86400; // 24 hours in seconds
 
 declare_id!("4J2kcg1ipXTv8S6ML2Vc4K5L4yXEK7w2ytBSGPHExcdW");
+
+pub use errors::ErrorCode;
 
 #[arcium_program]
 pub mod credit_score {
@@ -370,19 +374,4 @@ pub struct EncryptedScoreShared {
     pub nonce: [u8; 16],
     pub encrypted_score: [u8; 32],
     pub encrypted_risk_level: [u8; 32],
-}
-
-// Errors
-#[error_code]
-pub enum ErrorCode {
-    #[msg("Must wait 24 hours between score updates")]
-    UpdateTooSoon,
-    #[msg("Score calculation failed")]
-    CalculationFailed,
-    #[msg("Score is older than 7 days")]
-    ScoreExpired,
-    #[msg("Failed to share score")]
-    SharingFailed,
-    #[msg("cluster not found")]
-    ClusterNotSet,
 }
