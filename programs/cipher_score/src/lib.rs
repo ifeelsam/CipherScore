@@ -12,7 +12,7 @@ declare_id!("4J2kcg1ipXTv8S6ML2Vc4K5L4yXEK7w2ytBSGPHExcdW");
 pub use errors::ErrorCode;
 
 #[arcium_program]
-pub mod credit_score {
+pub mod cipher_score {
     use arcium_client::idl::arcium::types::CallbackAccount;
 
     use super::*;
