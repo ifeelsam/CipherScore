@@ -26,7 +26,7 @@ import {
 import * as fs from "fs";
 import * as os from "os";
 
-const PROGRAM_ADDRESS = IDL.address;
+const PROGRAM_ADDRESS = IDL.address || "EgciEm9Re7kKa4PJ22ApeuBgRR9REPMA8UTv6dwTKAg9";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
