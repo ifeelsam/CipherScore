@@ -77,7 +77,7 @@ async function initializeSolana() {
       if (fs.existsSync(walletPath)) {
         const walletData = JSON.parse(fs.readFileSync(walletPath, 'utf8'));
         payerWallet = anchor.web3.Keypair.fromSecretKey(new Uint8Array(walletData));
-        console.log("✅ Loaded wallet from wallet.json:", payerWallet.publicKey.toString());
+        console.log("Loaded wallet from wallet.json:", payerWallet.publicKey.toString());
       } else {
         // Fallback to system wallet
         const keypairPath = `${os.homedir()}/.config/solana/id.json`;
@@ -85,7 +85,7 @@ async function initializeSolana() {
         payerWallet = anchor.web3.Keypair.fromSecretKey(
           new Uint8Array(JSON.parse(file.toString()))
         );
-        console.log("✅ Loaded system wallet:", payerWallet.publicKey.toString());
+        console.log("Loaded system wallet:", payerWallet.publicKey.toString());
       }
     } catch (error: any) {
       throw new Error(`Failed to load wallet: ${error.message}`);
@@ -125,7 +125,7 @@ async function initializeSolana() {
         console.log("Computation definition initialized");
       } catch (error) {
         console.log("⚠️ CompDef already initialized or error:", error);
-        compDefInitialized = true; // Assume it's already initialized
+        compDefInitialized = true;
       }
     }
 
@@ -394,13 +394,13 @@ app.post('/calculate_credit_score', async (req, res) => {
       });
     }
 
-    console.log("🚀 Starting credit score calculation...");
+    console.log("Starting credit score calculation...");
     const result = await calculate_credit_score_on_chain(metrics);
 
     res.json(result);
 
   } catch (error: any) {
-    console.error('❌ Error in credit score endpoint:', error);
+    console.error('Error in credit score endpoint:', error);
     res.status(500).json({
       error: 'Internal server error',
       message: error.message || 'Unknown error',
@@ -498,7 +498,7 @@ async function initCalculateScoreCompDef(
     getArciumProgAddress()
   )[0];
 
-  console.log("Comp def pda is", compDefPDA);
+  // console.log("Comp def pda is", compDefPDA);
 
   const sig = await program.methods
     .initCompDefs()
@@ -551,15 +551,15 @@ async function initCalculateScoreCompDef(
 initializeSolana().then((success) => {
   if (success) {
     app.listen(PORT, () => {
-      console.log(`🚀 Cipher Score Backend API running on port ${PORT}`);
-      console.log(`📊 Credit Score API: POST /calculate_credit_score`);
-      console.log(`🏥 Health Check: GET /health`);
-      console.log(`💼 Wallet Info: GET /wallet`);
-      console.log(`📝 Sample Data: GET /sample_wallets`);
-      console.log(`💰 Payer Wallet: ${payerWallet.publicKey.toString()}`);
+      console.log(`Cipher Score Backend API running on port ${PORT}`);
+      console.log(`Credit Score API: POST /calculate_credit_score`);
+      console.log(`Health Check: GET /health`);
+      console.log(`Wallet Info: GET /wallet`);
+      console.log(`Sample Data: GET /sample_wallets`);
+      console.log(`Payer Wallet: ${payerWallet.publicKey.toString()}`);
     });
   } else {
-    console.error("❌ Failed to start server due to Solana initialization failure");
+    console.error("Failed to start server due to Solana initialization failure");
     process.exit(1);
   }
 });
