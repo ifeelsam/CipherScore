@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-cipher_score = "4J2kcg1ipXTv8S6ML2Vc4K5L4yXEK7w2ytBSGPHExcdW"
+cipher_score = "EgciEm9Re7kKa4PJ22ApeuBgRR9REPMA8UTv6dwTKAg9"
 
 [registry]
 url = "https://api.apr.dev"

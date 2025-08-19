@@ -1,0 +1,21 @@
+{
+  "name": "cipher-backend",
+  "module": "src/index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@arcium-hq/client": "^0.2.0",
+    "@coral-xyz/anchor": "^0.31.1",
+    "@solana/web3.js": "^1.98.4",
+    "@types/express": "^5.0.3",
+    "crypto": "^1.0.1",
+    "express": "^5.1.0",
+    "fs": "^0.0.1-security",
+    "os": "^0.1.2"
+  }
+}

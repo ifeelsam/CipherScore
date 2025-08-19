@@ -7,7 +7,7 @@ const COMP_DEF_OFFSET_CALCULATE: u32 = comp_def_offset("calculate_credit_score")
 const COMP_DEF_OFFSET_SHARE: u32 = comp_def_offset("calculate_and_share_score");
 const UPDATE_COOLDOWN: i64 = 86400; // 24 hours in seconds
 
-declare_id!("4J2kcg1ipXTv8S6ML2Vc4K5L4yXEK7w2ytBSGPHExcdW");
+declare_id!("EgciEm9Re7kKa4PJ22ApeuBgRR9REPMA8UTv6dwTKAg9");
 
 pub use errors::ErrorCode;
 
