@@ -5,9 +5,9 @@ use arcium_anchor::prelude::*;
 
 const COMP_DEF_OFFSET_CALCULATE: u32 = comp_def_offset("calculate_credit_score");
 const COMP_DEF_OFFSET_SHARE: u32 = comp_def_offset("calculate_and_share_score");
-const UPDATE_COOLDOWN: i64 = 86400; // 24 hours in seconds
+const UPDATE_COOLDOWN: i64 = 0; // Cooldown disabled for testing
 
-declare_id!("EgciEm9Re7kKa4PJ22ApeuBgRR9REPMA8UTv6dwTKAg9");
+declare_id!("Y6EgVRhLQCnh6cDDetuH3eYRWSscpubkFp1iuvtGqT7");
 
 pub use errors::ErrorCode;
 
