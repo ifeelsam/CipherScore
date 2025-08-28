@@ -26,7 +26,13 @@ import {
 import * as fs from "fs";
 import * as os from "os";
 
-const PROGRAM_ADDRESS = IDL.address || "EgciEm9Re7kKa4PJ22ApeuBgRR9REPMA8UTv6dwTKAg9";
+// Import route modules
+import healthRoutes from './routes/health.js';
+import walletRoutes from './routes/wallet.js';
+import walletStatusRoutes from './routes/wallet-status.js';
+import adminRoutes from './routes/admin.js';
+
+const PROGRAM_ADDRESS = IDL.address || "Y6EgVRhLQCnh6cDDetuH3eYRWSscpubkFp1iuvtGqT7";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -145,6 +151,16 @@ async function initializeSolana() {
     mxePublicKey = await getMXEPublicKeyWithRetry(provider as any, program.programId);
 
     console.log("MXE x25519 pubkey obtained");
+    
+    // Store globals in app.locals for route access
+    app.locals.program = program;
+    app.locals.provider = provider;
+    app.locals.payerWallet = payerWallet;
+    app.locals.mxePublicKey = mxePublicKey;
+    app.locals.compDefInitialized = compDefInitialized;
+    app.locals.PROGRAM_ADDRESS = PROGRAM_ADDRESS;
+    app.locals.initCalculateScoreCompDef = initCalculateScoreCompDef;
+    
     return true;
   } catch (error) {
     console.error("Failed to initialize Solana:", error);
@@ -467,212 +483,12 @@ async function calculate_credit_score_on_chain(metrics: WalletMetrics): Promise<
   }
 }
 
-// API Routes
+// Use route modules
+app.use('/', healthRoutes);
+app.use('/', walletRoutes);
+app.use('/', walletStatusRoutes);
+app.use('/', adminRoutes);
 
-// Initialize computation definitions
-app.post('/init_comp_def', async (req, res) => {
-  try {
-    if (!program || !provider || !payerWallet) {
-      return res.status(503).json({
-        error: "Solana not initialized. Please wait for initialization to complete.",
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    console.log("Initializing computation definitions...");
-    
-    const signature = await initCalculateScoreCompDef(program, payerWallet, false);
-    
-    // Mark as initialized on success
-    compDefInitialized = true;
-    console.log("Computation definitions initialized successfully:", signature);
-
-    res.json({
-      success: true,
-      data: {
-        transaction_signature: signature,
-        message: "Computation definitions initialized successfully"
-      },
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error: any) {
-    console.error('Error initializing computation definitions:', error);
-    
-    // Check if already initialized
-    if (error.message?.includes("already initialized") || 
-        error.message?.includes("AlreadyInitialized")) {
-      return res.json({
-        success: true,
-        data: {
-          message: "Computation definitions already initialized"
-        },
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    res.status(500).json({
-      error: 'Failed to initialize computation definitions',
-      message: error.message || 'Unknown error',
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Health check
-app.get('/health', (req, res) => {
-  const isInitialized = program && provider && payerWallet;
-  res.json({
-    status: isInitialized ? 'OK' : 'INITIALIZING',
-    program_initialized: !!program,
-    wallet_loaded: !!payerWallet,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Helper function for wallet status logic
-async function getWalletStatus(walletAddress: PublicKey) {
-  console.log(`Checking wallet status for: ${walletAddress.toString()}`);
-
-  const [creditAccountPub] = PublicKey.findProgramAddressSync(
-    [Buffer.from("credit"), walletAddress.toBuffer()],
-    program.programId
-  );
-
-  try {
-    const creditAccount = await program.account.creditAccount.fetch(creditAccountPub);
-    const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
-    const lastUpdated = creditAccount.lastUpdated.toNumber();
-    const scoreTimestamp = creditAccount.scoreTimestamp.toNumber();
-    const cooldownPeriod = 0; // Cooldown disabled for testing
-    const timeSinceUpdate = currentTime - lastUpdated;
-    const remainingCooldown = Math.max(0, cooldownPeriod - timeSinceUpdate);
-    
-    // Convert to human readable format
-    const hoursRemaining = Math.floor(remainingCooldown / 3600);
-    const minutesRemaining = Math.floor((remainingCooldown % 3600) / 60);
-    
-    return {
-      wallet_address: walletAddress.toString(),
-      credit_account: creditAccountPub.toString(),
-      account_exists: true,
-      current_score: creditAccount.currentScore,
-      risk_level: creditAccount.riskLevel,
-      last_updated: new Date(lastUpdated * 1000).toISOString(),
-      score_timestamp: new Date(scoreTimestamp * 1000).toISOString(),
-      cooldown_status: {
-        can_update: remainingCooldown === 0,
-        remaining_seconds: remainingCooldown,
-        remaining_time: remainingCooldown === 0 ? "Ready to update" : `${hoursRemaining}h ${minutesRemaining}m`,
-        next_update_available: new Date((lastUpdated + cooldownPeriod) * 1000).toISOString()
-      }
-    };
-
-  } catch (accountError) {
-    // Account doesn't exist yet
-    return {
-      wallet_address: walletAddress.toString(),
-      credit_account: creditAccountPub.toString(),
-      account_exists: false,
-      current_score: null,
-      risk_level: null,
-      last_updated: null,
-      score_timestamp: null,
-      cooldown_status: {
-        can_update: true,
-        remaining_seconds: 0,
-        remaining_time: "Ready for first calculation",
-        next_update_available: "Now"
-      }
-    };
-  }
-}
-
-// Get wallet status for current payer wallet
-app.get('/wallet_status', async (req, res) => {
-  try {
-    if (!program || !provider || !payerWallet) {
-      return res.status(503).json({
-        error: "Solana not initialized"
-      });
-    }
-
-    const data = await getWalletStatus(payerWallet.publicKey);
-    res.json({
-      success: true,
-      data,
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error: any) {
-    console.error('Error checking wallet status:', error);
-    res.status(500).json({
-      error: 'Failed to check wallet status',
-      message: error.message || 'Unknown error',
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Get wallet status for specific wallet address
-app.get('/wallet_status/:wallet_address', async (req, res) => {
-  try {
-    if (!program || !provider || !payerWallet) {
-      return res.status(503).json({
-        error: "Solana not initialized"
-      });
-    }
-
-    const walletAddress = new PublicKey(req.params.wallet_address);
-    const data = await getWalletStatus(walletAddress);
-    
-    res.json({
-      success: true,
-      data,
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error: any) {
-    console.error('Error checking wallet status:', error);
-    res.status(500).json({
-      error: 'Failed to check wallet status',
-      message: error.message || 'Unknown error',
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Get wallet info
-app.get('/wallet', async (req, res) => {
-  try {
-    if (!payerWallet || !provider) {
-      return res.status(503).json({
-        error: "Solana not initialized"
-      });
-    }
-
-    const balance = await provider.connection.getBalance(payerWallet.publicKey);
-
-    res.json({
-      success: true,
-      data: {
-        public_key: payerWallet.publicKey.toString(),
-        balance_sol: balance / anchor.web3.LAMPORTS_PER_SOL,
-        balance_lamports: balance,
-        program_address: PROGRAM_ADDRESS,
-        comp_def_initialized: compDefInitialized,
-      },
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error: any) {
-    res.status(500).json({
-      error: error.message || "Failed to get wallet info"
-    });
-  }
-});
-
-// Calculate credit score endpoint (using actual Solana program)
 app.post('/calculate_credit_score', async (req, res) => {
   try {
     if (!program || !provider || !payerWallet) {
@@ -746,48 +562,6 @@ app.post('/calculate_credit_score', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   }
-});
-
-// Get sample wallet data for testing
-app.get('/sample_wallets', (req, res) => {
-  const samples = {
-    high_quality: {
-      wallet_age_days: 400,
-      transaction_count: 150,
-      total_volume_usd: 15_000_000, // $15k volume (scaled by 1000)
-      unique_protocols: 12,
-      defi_positions: 5,
-      nft_count: 10,
-      failed_txs: 2,
-      sol_balance: 100_000_000_000, // 100 SOL in lamports
-    },
-    medium_quality: {
-      wallet_age_days: 180,
-      transaction_count: 50,
-      total_volume_usd: 5_000_000, // $5k volume
-      unique_protocols: 5,
-      defi_positions: 2,
-      nft_count: 3,
-      failed_txs: 1,
-      sol_balance: 10_000_000_000, // 10 SOL
-    },
-    low_quality: {
-      wallet_age_days: 30,
-      transaction_count: 5,
-      total_volume_usd: 100_000, // $100 volume
-      unique_protocols: 1,
-      defi_positions: 0,
-      nft_count: 0,
-      failed_txs: 3,
-      sol_balance: 1_000_000, // 0.001 SOL
-    }
-  };
-
-  res.json({
-    success: true,
-    data: samples,
-    description: "Sample wallet metrics for testing the credit score API"
-  });
 });
 
 // Helper functions
