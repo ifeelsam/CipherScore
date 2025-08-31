@@ -313,7 +313,7 @@ async function calculate_credit_score_on_chain(metrics: WalletMetrics): Promise<
       .signers([payerWallet, testWallet])
       .rpc({ commitment: "confirmed" });
 
-    console.log("Transaction submitted:", queueSig);
+    console.log("Transaction submitted (queue):", queueSig);
     
     // Add a small delay to ensure event listener is ready
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -356,7 +356,7 @@ async function calculate_credit_score_on_chain(metrics: WalletMetrics): Promise<
 
       // Get the score from the event
       console.log("Waiting for score calculation event...");
-      const scoreEvent = await scoreCalculatedPromise;
+      scoreEvent = await scoreCalculatedPromise;
     } catch (finalizationError) {
       console.log("Computation finalization failed or timed out:", finalizationError);
       
@@ -633,7 +633,7 @@ async function initCalculateScoreCompDef(
   console.log("Init calculate score computation definition transaction", sig);
 
   if (uploadRawCircuit) {
-    const rawCircuit = fs.readFileSync("build/calculate_credit_score.arcis");
+    const rawCircuit = fs.readFileSync("../../build/calculate_credit_score.arcis");
 
     await uploadCircuit(
       provider,

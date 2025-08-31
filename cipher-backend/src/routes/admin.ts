@@ -22,7 +22,7 @@ router.post('/init_comp_def', async (req, res) => {
 
     console.log("Initializing computation definitions...");
     
-    const signature = await initCalculateScoreCompDef(program, payerWallet, false);
+    const signature = await initCalculateScoreCompDef(program, payerWallet, true);
     
     // Mark as initialized on success
     req.app.locals.compDefInitialized = true;
