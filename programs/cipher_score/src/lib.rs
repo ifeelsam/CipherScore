@@ -7,13 +7,13 @@ const COMP_DEF_OFFSET_CALCULATE: u32 = comp_def_offset("calculate_credit_score")
 const COMP_DEF_OFFSET_SHARE: u32 = comp_def_offset("calculate_and_share_score");
 const UPDATE_COOLDOWN: i64 = 0; // Cooldown disabled for testing
 
-declare_id!("Y6EgVRhLQCnh6cDDetuH3eYRWSscpubkFp1iuvtGqT7");
+declare_id!("DRVNJ8hcuWamrCf5zzpZVC8r77LnACjpA39GaFV2J2hB");
 
 pub use errors::ErrorCode;
 
 #[arcium_program]
 pub mod cipher_score {
-    use arcium_client::idl::arcium::types::CallbackAccount;
+    use arcium_client::idl::arcium::types::{CallbackAccount, CircuitSource, OffChainCircuitSource};
 
     use super::*;
 
@@ -24,7 +24,10 @@ pub mod cipher_score {
             ctx.accounts, 
             true,
             0,
-            None,
+            Some(CircuitSource::OffChain(OffChainCircuitSource {
+            source: "https://pub-89039ebb86fd417d97a5421a9d268eb8.r2.dev/calculate_credit_score_testnet.arcis".to_string(),
+            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
+            })),
             None,
         )?;
         
