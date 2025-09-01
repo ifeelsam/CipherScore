@@ -218,26 +218,22 @@ async function calculate_credit_score_on_chain(metrics: WalletMetrics): Promise<
       program.programId
     );
 
-    // Listen for score calculation event with improved timeout and logging
-    let listenerId: number | undefined;
-    let timeoutId: NodeJS.Timeout | undefined;
-    
+    // Listen for score calculation event
     console.log("Setting up event listener for scoreCalculated...");
     
     const scoreCalculatedPromise = new Promise<any>((resolve, reject) => {
       listenerId = program.addEventListener("scoreCalculated", (event) => {
         console.log("Score calculation event received:", event);
-        if (timeoutId) clearTimeout(timeoutId);
         resolve(event);
       });
       
       console.log(`Event listener registered with ID: ${listenerId}`);
 
-      // Increase timeout to 5 minutes (300 seconds) for blockchain computations
+      // Set a reasonable timeout just in case event doesn't arrive
       timeoutId = setTimeout(() => {
-        console.log("Score calculation timed out after 5 minutes");
-        reject(new Error("Score calculation timeout after 5 minutes. The computation may still be processing on-chain."));
-      }, 300000);
+        console.log("Score calculation event timed out after 60 seconds");
+        reject(new Error("Score calculation event timeout. The MXE computation may have failed."));
+      }, 60000);
     });
 
     const computationOffset = new anchor.BN(randomBytes(8), "hex");
@@ -315,89 +311,20 @@ async function calculate_credit_score_on_chain(metrics: WalletMetrics): Promise<
 
     console.log("Transaction submitted (queue):", queueSig);
     
-    // Add a small delay to ensure event listener is ready
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    let scoreEvent;
-    // Check computation account first
-    const computationAccountAddress = getComputationAccAddress(
-      program.programId,
-      computationOffset
-    );
-    console.log("Computation account address:", computationAccountAddress.toString());
+    // Wait for MXE event immediately - don't wait for finalization
+    console.log("Waiting for MXE computation event...");
+    const scoreEvent = await scoreCalculatedPromise;
     
-    try {
-      const compAccount = await provider.connection.getAccountInfo(computationAccountAddress);
-      console.log("Computation account exists:", !!compAccount);
-      if (compAccount) {
-        console.log("Computation account data length:", compAccount.data.length);
-      }
-    } catch (error) {
-      console.log("Error checking computation account:", error);
-    }
+    // Got the score from MXE event - return immediately
+    console.log(`Credit Score Calculated: ${scoreEvent.score}`);
+    console.log(`Risk Level: ${JSON.stringify(scoreEvent.riskLevel)}`);
 
-    try {
-      // Wait for computation to finalize with timeout
-      console.log("Waiting for computation to finalize...");
-      console.log("Computation offset:", computationOffset.toString());
-      console.log("Program ID:", program.programId.toString());
-      
-      const finalizeSig = await Promise.race([
-        awaitComputationFinalization(
-          provider,
-          computationOffset,
-          program.programId,
-          "confirmed"
-        ),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Computation finalization timeout")), 240000) // 4 minutes
-        )
-      ]);
-      console.log("Computation finalized:", finalizeSig);
-
-      // Get the score from the event
-      console.log("Waiting for score calculation event...");
-      scoreEvent = await scoreCalculatedPromise;
-    } catch (finalizationError) {
-      console.log("Computation finalization failed or timed out:", finalizationError);
-      
-      // Check what happened to the computation account
-      try {
-        const compAccountAfter = await provider.connection.getAccountInfo(computationAccountAddress);
-        console.log("Computation account after timeout:", !!compAccountAfter);
-        if (compAccountAfter) {
-          console.log("Computation account data length after timeout:", compAccountAfter.data.length);
-        }
-        
-        // Check transaction status
-        const txStatus = await provider.connection.getSignatureStatus(queueSig);
-        console.log("Transaction status:", JSON.stringify(txStatus, null, 2));
-        
-      } catch (checkError) {
-        console.log("Error checking status after timeout:", checkError);
-      }
-      
-      // Still try to get the event in case it arrives
-      console.log("Still waiting for score event despite finalization timeout...");
-      
-      // Reduce timeout for event since finalization failed
-      const quickEventPromise = new Promise<any>((resolve, reject) => {
-        setTimeout(() => {
-          reject(new Error("Event timeout after finalization failure"));
-        }, 60000); // 1 minute additional wait
-      });
-      
-      scoreEvent = await Promise.race([scoreCalculatedPromise, quickEventPromise]);
-    }
-
-    // Clean up event listener and timeout
+    // Clean up event listener
     if (timeoutId) clearTimeout(timeoutId);
     if (listenerId !== undefined) {
       console.log(`Cleaning up event listener ${listenerId}`);
       await program.removeEventListener(listenerId);
     }
-
-    console.log(`Credit Score Calculated: ${scoreEvent.score}`);
-    console.log(`Risk Level: ${JSON.stringify(scoreEvent.riskLevel)}`);
 
     // Determine risk level string
     let riskLevelString: 'low' | 'medium' | 'high';
@@ -408,6 +335,18 @@ async function calculate_credit_score_on_chain(metrics: WalletMetrics): Promise<
     } else {
       riskLevelString = 'high';
     }
+
+    // Start finalization in background for logging (don't await)
+    awaitComputationFinalization(
+      provider,
+      computationOffset,
+      program.programId,
+      "confirmed"
+    ).then(finalizeSig => {
+      console.log("Computation finalized (background):", finalizeSig);
+    }).catch(error => {
+      console.log("Background finalization failed:", error);
+    });
 
     return {
       success: true,
@@ -632,31 +571,7 @@ async function initCalculateScoreCompDef(
     });
   console.log("Init calculate score computation definition transaction", sig);
 
-  if (uploadRawCircuit) {
-    const rawCircuit = fs.readFileSync("../../build/calculate_credit_score.arcis");
 
-    await uploadCircuit(
-      provider,
-      "calculate_credit_score",
-      program.programId,
-      rawCircuit,
-      true
-    );
-  } else {
-    const finalizeTx = await buildFinalizeCompDefTx(
-      provider,
-      Buffer.from(offset).readUInt32LE(),
-      program.programId
-    );
-
-    const latestBlockhash = await provider.connection.getLatestBlockhash();
-    finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-    finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-
-    finalizeTx.sign(owner);
-
-    await provider.sendAndConfirm(finalizeTx);
-  }
   return sig;
 }
 
