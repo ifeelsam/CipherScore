@@ -31,6 +31,13 @@ import healthRoutes from './routes/health.js';
 import walletRoutes from './routes/wallet.js';
 import walletStatusRoutes from './routes/wallet-status.js';
 import adminRoutes from './routes/admin.js';
+import apiKeyRoutes from './routes/api-keys.js';
+import userRoutes from './routes/users.js';
+import walletAuthRoutes from './routes/wallet-auth.js';
+import userApiKeyRoutes from './routes/user-api-keys.js';
+
+// Import middleware
+import authenticateAPIKey, { requireAdmin } from './middleware/auth.js';
 
 const PROGRAM_ADDRESS = IDL.address || "Y6EgVRhLQCnh6cDDetuH3eYRWSscpubkFp1iuvtGqT7";
 
@@ -422,13 +429,24 @@ async function calculate_credit_score_on_chain(metrics: WalletMetrics): Promise<
   }
 }
 
-// Use route modules
+// Public routes (no auth required)
 app.use('/', healthRoutes);
-app.use('/', walletRoutes);
-app.use('/', walletStatusRoutes);
-app.use('/', adminRoutes);
+app.use('/auth', userRoutes); // Public signup (deprecated - use wallet auth)
+app.use('/wallet-auth', walletAuthRoutes); // Wallet-based authentication
 
-app.post('/calculate_credit_score', async (req, res) => {
+// Admin routes (require admin key)
+app.use('/admin', requireAdmin, apiKeyRoutes);
+
+// Frontend user routes (require session token)
+app.use('/dashboard/api-keys', userApiKeyRoutes); // API key management for frontend
+
+// Protected API routes (require API key)
+app.use('/', authenticateAPIKey, walletRoutes);
+app.use('/', authenticateAPIKey, walletStatusRoutes);
+app.use('/', authenticateAPIKey, adminRoutes);
+app.use('/user', authenticateAPIKey, userRoutes); // User profile routes
+
+app.post('/calculate_credit_score', authenticateAPIKey, async (req, res) => {
   try {
     if (!program || !provider || !payerWallet) {
       return res.status(503).json({

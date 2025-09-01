@@ -1,0 +1,93 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserTier {
+  NORMAL    // 5 free credit scores per month
+  PREMIUM   // 15 free credit scores per month
+}
+
+model User {
+  id            String   @id @default(cuid())
+  walletAddress String   @unique @map("wallet_address") // Primary identifier
+  email         String?  // Optional email for notifications
+  name          String?  // Optional display name
+  tier          UserTier @default(NORMAL)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  isActive      Boolean  @default(true) @map("is_active")
+  
+  // Monthly usage tracking
+  monthlyUsage     Int     @default(0) @map("monthly_usage")
+  lastResetAt      DateTime @default(now()) @map("last_reset_at")
+  
+  // Authentication
+  nonce         String?  // For wallet signature verification
+  nonceExpiry   DateTime? @map("nonce_expiry")
+  
+  // Relations
+  apiKeys       ApiKey[]
+  sessions      Session[]
+  
+  @@map("users")
+}
+
+// Session management for frontend wallet authentication
+model Session {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+}
+
+model ApiKey {
+  id                String   @id @default(cuid())
+  key               String   @unique
+  name              String
+  userId            String   @map("user_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  lastUsed          DateTime? @map("last_used")
+  isActive          Boolean  @default(true) @map("is_active")
+  usageCount        Int      @default(0) @map("usage_count")
+  
+  // Relations
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usage             ApiKeyUsage[]
+
+  @@map("api_keys")
+}
+
+model ApiKeyUsage {
+  id        String   @id @default(cuid())
+  apiKeyId  String   @map("api_key_id")
+  endpoint  String
+  timestamp DateTime @default(now())
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  
+  // Relations
+  apiKey    ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+
+  @@map("api_key_usage")
+  @@index([apiKeyId, timestamp])
+}
