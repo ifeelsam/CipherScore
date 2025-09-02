@@ -6,9 +6,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { Home, BarChart3, CreditCard, BookOpen, Settings, LogOut } from "lucide-react"
 import { NavItem } from "./nav-item"
+import { useWallet } from "@solana/wallet-adapter-react"
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui"
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
+  const { connected, publicKey, disconnect } = useWallet()
 
   return (
     <aside
@@ -92,7 +95,7 @@ export function Sidebar() {
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Bottom: user and logout */}
+      {/* Bottom: user and wallet connect/disconnect */}
       <div className="border-t border-white/10 px-3 py-3">
         <Link
           href="/account"
@@ -112,23 +115,32 @@ export function Sidebar() {
             )}
           >
             <p className="truncate text-sm font-medium text-white/90">Developer Name</p>
-            <p className="truncate text-xs text-white/60">developer@cipherscore.dev</p>
+            <p className="truncate text-xs text-white/60">{connected && publicKey ? `${publicKey.toBase58().slice(0, 8)}...${publicKey.toBase58().slice(-4)}` : "Not connected"}</p>
           </div>
         </Link>
 
-        <Link
-          href="/logout"
-          className="mt-2 inline-flex w-full items-center justify-center rounded-full px-3 py-2 text-sm font-medium transition"
-          style={{
-            // Secondary CTA uses teal outline per brief
-            color: "#00FFFF",
-            border: "1px solid #00FFFF80",
-            background: "transparent",
-          }}
-        >
-          <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
-          <span className={cn(collapsed ? "sr-only" : "")}>Logout</span>
-        </Link>
+        {/* Wallet control replaces Logout */}
+        {connected ? (
+          <button
+            onClick={() => disconnect()}
+            className="mt-2 inline-flex w-full items-center justify-center rounded-full px-3 py-2 text-sm font-medium transition"
+            style={{
+              color: "#00FFFF",
+              border: "1px solid #00FFFF80",
+              background: "transparent",
+            }}
+          >
+            <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
+            <span className={cn(collapsed ? "sr-only" : "")}>Disconnect Wallet</span>
+          </button>
+        ) : (
+          <WalletMultiButton
+            className={cn(
+              "mt-2 !w-full !justify-center !rounded-full !px-3 !py-2 !text-sm !font-medium !transition",
+              "!bg-[#8A2BE2] !text-white !shadow-md hover:!shadow-[0_0_24px_rgba(138,43,226,0.4)] !border-none",
+            )}
+          />
+        )}
       </div>
 
       {/* Glow edges for a subtle neon vibe on interactive elements */}
