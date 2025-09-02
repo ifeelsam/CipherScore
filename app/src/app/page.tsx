@@ -1,40 +1,44 @@
 import { Sidebar } from "@/components/sidebar"
+import { WalletAuthGuard } from "@/components/wallet-auth-guard"
+import { WalletConnect } from "@/components/wallet-connect"
 
 export default function Page() {
   return (
-    <main className="flex min-h-dvh" style={{ background: "#121212" }}>
-      {/* Sidebar */}
-      <Sidebar />
+    <WalletAuthGuard>
+      <main className="flex min-h-dvh" style={{ background: "#121212" }}>
+        {/* Sidebar */}
+        <Sidebar />
 
-      {/* Content */}
-      <section className="flex-1">
-        <header className="sticky top-0 z-10 border-b border-white/10 bg-[#121212]/80 px-6 py-4 backdrop-blur">
-          <div className="mx-auto flex max-w-6xl items-center justify-between">
-            <div>
-              <h1 className="text-pretty text-lg font-semibold text-white">Welcome back, Developer</h1>
-              <p className="text-sm text-white/70">Your API is performing well today</p>
+        {/* Content */}
+        <section className="flex-1">
+          <header className="sticky top-0 z-10 border-b border-white/10 bg-[#121212]/80 px-6 py-4 backdrop-blur">
+            <div className="mx-auto flex max-w-6xl items-center justify-between">
+              <div>
+                <h1 className="text-pretty text-lg font-semibold text-white">Welcome back, Developer</h1>
+                <p className="text-sm text-white/70">Your API is performing well today</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <a
+                  href="/docs"
+                  className="rounded-full px-4 py-2 text-sm font-medium transition"
+                  style={{
+                    color: "#00FFFF",
+                    border: "1px solid #00FFFF80",
+                    background: "transparent",
+                  }}
+                >
+                  View API Docs
+                </a>
+                <a
+                  href="/settings"
+                  className="rounded-full bg-[#8A2BE2] px-4 py-2 text-sm font-medium text-white shadow-md transition hover:shadow-[0_0_24px_rgba(138,43,226,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00FFFF]/60"
+                >
+                  Account Settings
+                </a>
+                <WalletConnect />
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <a
-                href="/docs"
-                className="rounded-full px-4 py-2 text-sm font-medium transition"
-                style={{
-                  color: "#00FFFF",
-                  border: "1px solid #00FFFF80",
-                  background: "transparent",
-                }}
-              >
-                View API Docs
-              </a>
-              <a
-                href="/settings"
-                className="rounded-full bg-[#8A2BE2] px-4 py-2 text-sm font-medium text-white shadow-md transition hover:shadow-[0_0_24px_rgba(138,43,226,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00FFFF]/60"
-              >
-                Account Settings
-              </a>
-            </div>
-          </div>
-        </header>
+          </header>
 
         <div className="mx-auto max-w-6xl space-y-6 p-6">
           {/* Placeholder cards to show palette and radius */}
@@ -133,5 +137,6 @@ export default function Page() {
         </div>
       </section>
     </main>
+    </WalletAuthGuard>
   )
 }
