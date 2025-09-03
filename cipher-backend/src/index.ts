@@ -25,6 +25,7 @@ import {
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
+import cors from 'cors';
 
 // Import route modules
 import healthRoutes from './routes/health.js';
@@ -46,6 +47,10 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
+
+// CORS for frontend (adjust origin via env if needed)
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:3001';
+app.use(cors());
 
 // Types based on the cipher_score.ts and lib.rs
 interface WalletMetrics {
@@ -605,6 +610,7 @@ initializeSolana().then((success) => {
       console.log(`Wallet Info: GET /wallet`);
       console.log(`Sample Data: GET /sample_wallets`);
       console.log(`Payer Wallet: ${payerWallet.publicKey.toString()}`);
+      console.log(`CORS origin allowed: ${FRONTEND_ORIGIN}`);
     });
   } else {
     console.error("Failed to start server due to Solana initialization failure");

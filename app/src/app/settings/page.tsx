@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
+import { useWallet } from "@solana/wallet-adapter-react"
+import bs58 from "bs58"
 
 export default function SettingsPage() {
   return (
@@ -55,8 +57,8 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* API Key */}
-          <ApiKeyCard />
+          {/* API Keys */}
+          <ApiKeysManager />
 
           {/* Preferences */}
           <PreferencesCard />
@@ -66,70 +68,338 @@ export default function SettingsPage() {
   )
 }
 
-function ApiKeyCard() {
+function ApiKeysManager() {
+  type SanitizedKey = {
+    id: string
+    name: string
+    createdAt: string
+    lastUsed?: string | null
+    isActive: boolean
+    usageCount: number
+    totalUsageRecords?: number
+    keyPreview: string
+  }
+
+  const backendBaseUrl = useMemo(() => process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000", [])
+  const { connected, publicKey, signMessage } = useWallet()
+  const [sessionToken, setSessionToken] = useState<string | null>(null)
+  const [authenticating, setAuthenticating] = useState(false)
+  const [keys, setKeys] = useState<SanitizedKey[]>([])
+  const [loading, setLoading] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [newKeyName, setNewKeyName] = useState("")
+  const [newKeyPlain, setNewKeyPlain] = useState<string | null>(null)
+  const [renameId, setRenameId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState("")
+
+  // Ensure a session token when wallet is connected
+  useEffect(() => {
+    let cancelled = false
+
+    async function ensureSession() {
+      if (!connected || !publicKey) return
+
+      // Try reuse
+      const stored = typeof window !== "undefined" ? window.localStorage.getItem("cipher_session") : null
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as { token: string; expiresAt: string; walletAddress: string }
+          const notExpired = new Date(parsed.expiresAt).getTime() > Date.now()
+          const sameWallet = parsed.walletAddress === publicKey.toBase58()
+          if (notExpired && sameWallet) {
+            setSessionToken(parsed.token)
+            return
+          }
+        } catch {}
+      }
+
+      // Create fresh session via signed nonce
+      try {
+        setAuthenticating(true)
+        const nonceRes = await fetch(`${backendBaseUrl}/wallet-auth/request-nonce`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ walletAddress: publicKey.toBase58() }),
+        })
+        const nonceJson = await nonceRes.json()
+        if (!nonceRes.ok || !nonceJson?.data?.message) throw new Error(nonceJson?.error || "Failed to get nonce")
+
+        if (!signMessage) throw new Error("Wallet does not support message signing")
+        const messageBytes = new TextEncoder().encode(nonceJson.data.message as string)
+        const sigBytes = await signMessage(messageBytes)
+        const signature = bs58.encode(sigBytes)
+
+        const verifyRes = await fetch(`${backendBaseUrl}/wallet-auth/verify-signature`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            walletAddress: publicKey.toBase58(),
+            signature,
+            message: nonceJson.data.message,
+          }),
+        })
+        const verifyJson = await verifyRes.json()
+        if (!verifyRes.ok || !verifyJson?.success || !verifyJson?.data?.sessionToken) {
+          throw new Error(verifyJson?.error || "Auth failed")
+        }
+
+        const token = verifyJson.data.sessionToken as string
+        const expiresAt = verifyJson.data.expiresAt as string
+        if (!cancelled) {
+          setSessionToken(token)
+          window.localStorage.setItem(
+            "cipher_session",
+            JSON.stringify({ token, expiresAt, walletAddress: publicKey.toBase58() })
+          )
+        }
+      } catch (e) {
+        // Silent fail; UI will still show connect/auth prompt
+      } finally {
+        if (!cancelled) setAuthenticating(false)
+      }
+    }
+
+    ensureSession()
+    return () => { cancelled = true }
+  }, [connected, publicKey, signMessage, backendBaseUrl])
+
+  // Fetch keys when session ready
+  useEffect(() => {
+    if (!sessionToken) return
+    let cancelled = false
+
+    async function fetchKeys(token: string) {
+      setLoading(true)
+      try {
+        const res = await fetch(`${backendBaseUrl}/dashboard/api-keys/list`, {
+          headers: { "X-Session-Token": token },
+        })
+        const json = await res.json()
+        if (res.ok && json.success) {
+          if (!cancelled) setKeys(json.data as SanitizedKey[])
+        }
+      } catch (e) {
+        // ignore
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    fetchKeys(sessionToken)
+    return () => {
+      cancelled = true
+    }
+  }, [sessionToken, backendBaseUrl])
+
+  async function createKey() {
+    if (!sessionToken || !newKeyName.trim()) return
+    setCreating(true)
+    try {
+      const res = await fetch(`${backendBaseUrl}/dashboard/api-keys/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Session-Token": sessionToken },
+        body: JSON.stringify({ name: newKeyName.trim() }),
+      })
+      const json = await res.json()
+      if (res.ok && json.success) {
+        setNewKeyPlain(json.data.key as string)
+        setNewKeyName("")
+        // refresh list
+        const list = await fetch(`${backendBaseUrl}/dashboard/api-keys/list`, {
+          headers: { "X-Session-Token": sessionToken as string },
+        })
+        const listJson = await list.json()
+        if (list.ok && listJson.success) setKeys(listJson.data as SanitizedKey[])
+      }
+    } catch {}
+    finally {
+      setCreating(false)
+    }
+  }
+
+  async function deactivateKey(id: string) {
+    if (!sessionToken) return
+    try {
+      const res = await fetch(`${backendBaseUrl}/dashboard/api-keys/${id}`, {
+        method: "DELETE",
+        headers: { "X-Session-Token": sessionToken as string },
+      })
+      if (res.ok) {
+        setKeys((prev) => prev.map(k => k.id === id ? { ...k, isActive: false } : k))
+      }
+    } catch {}
+  }
+
+  async function submitRename() {
+    if (!sessionToken || !renameId || !renameValue.trim()) return
+    try {
+      const res = await fetch(`${backendBaseUrl}/dashboard/api-keys/${renameId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "X-Session-Token": sessionToken as string },
+        body: JSON.stringify({ name: renameValue.trim() }),
+      })
+      const json = await res.json()
+      if (res.ok && json.success) {
+        setKeys((prev) => prev.map(k => k.id === renameId ? { ...k, name: renameValue.trim() } : k))
+        setRenameId(null)
+        setRenameValue("")
+      }
+    } catch {}
+  }
+
   return (
     <Card style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}>
       <CardHeader>
-        <CardTitle className="text-white">API Key</CardTitle>
-        <CardDescription className="text-white/70">Keep your key secret. You can copy or regenerate.</CardDescription>
+        <CardTitle className="text-white">API Keys</CardTitle>
+        <CardDescription className="text-white/70">Create and manage your API keys</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <div className="grid flex-1 gap-2">
-            <Label htmlFor="api-key" className="text-white/80">
-              Current key
-            </Label>
-            <MaskedKey />
+        {!connected ? (
+          <div
+            className="rounded-xl p-4 text-sm"
+            style={{ background: "#121212", border: "1px solid rgba(255,255,255,0.06)", color: "#FFFFFFB2" }}
+          >
+            Connect your wallet to manage API keys.
           </div>
-          <div className="flex gap-2 pt-6 sm:pt-8">
-            <CopyKeyButton />
-            <Button
-              className="rounded-full bg-[#8A2BE2] px-4 text-white shadow-sm transition hover:shadow-[0_0_16px_rgba(138,43,226,0.35)]"
-              onClick={() => alert("Regenerate not implemented")}
+        ) : authenticating || !sessionToken ? (
+          <div
+            className="rounded-xl p-4 text-sm"
+            style={{ background: "#121212", border: "1px solid rgba(255,255,255,0.06)", color: "#FFFFFFB2" }}
+          >
+            Preparing your session...
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {newKeyPlain && (
+              <div
+                className="rounded-xl p-4"
+                style={{ background: "#121212", border: "1px solid rgba(255,255,255,0.06)" }}
+              >
+                <p className="text-sm text-white/80">New API key (shown once):</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    readOnly
+                    value={newKeyPlain}
+                    className="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs outline-none md:text-sm text-white"
+                    style={{ borderColor: "rgba(255,255,255,0.16)" }}
+                  />
+                  <button
+                    type="button"
+                    className="rounded-full px-4 text-sm font-medium transition"
+                    style={{ color: "#00FFFF", border: "1px solid #00FFFF80", background: "transparent", height: "36px" }}
+                    onClick={async () => {
+                      try { await navigator.clipboard.writeText(newKeyPlain) } catch {}
+                    }}
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Create */}
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto] items-end">
+              <div className="grid gap-2">
+                <Label htmlFor="keyName" className="text-white/80">New key name</Label>
+                <Input id="keyName" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="Default API Key" className="text-white placeholder:text-white/40" />
+              </div>
+              <Button
+                className="rounded-full bg-[#8A2BE2] px-4 text-white shadow-sm transition hover:shadow-[0_0_16px_rgba(138,43,226,0.35)]"
+                disabled={creating || !newKeyName.trim()}
+                onClick={createKey}
+              >
+                {creating ? "Creating..." : "Create Key"}
+              </Button>
+            </div>
+
+            {/* List */}
+            <div
+              className="rounded-xl"
+              style={{ background: "#121212", border: "1px solid rgba(255,255,255,0.06)" }}
             >
-              Regenerate
-            </Button>
+              <div className="grid grid-cols-12 gap-3 border-b border-white/5 px-3 py-2 text-xs text-white/50">
+                <div className="col-span-4">Name</div>
+                <div className="col-span-3">Key</div>
+                <div className="col-span-2">Status</div>
+                <div className="col-span-2">Usage</div>
+                <div className="col-span-1 text-right">Actions</div>
+              </div>
+              <div className="divide-y divide-white/5">
+                {loading ? (
+                  <div className="px-3 py-3 text-sm text-white/60">Loading...</div>
+                ) : keys.length === 0 ? (
+                  <div className="px-3 py-3 text-sm text-white/60">No keys yet. Create your first key using the form above.</div>
+                ) : (
+                  keys.map((k) => (
+                    <div key={k.id} className="grid grid-cols-12 items-center gap-3 px-3 py-3 text-sm">
+                      <div className="col-span-4">
+                        {renameId === k.id ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={renameValue}
+                              onChange={(e) => setRenameValue(e.target.value)}
+                              className="h-8 text-white"
+                            />
+                            <button
+                              className="rounded-full px-3 text-xs font-medium transition"
+                              style={{ color: "#00FFFF", border: "1px solid #00FFFF80", background: "transparent", height: "32px" }}
+                              onClick={submitRename}
+                            >
+                              Save
+                            </button>
+                            <button
+                              className="rounded-full px-3 text-xs font-medium transition"
+                              style={{ color: "#00FFFF", border: "1px solid #00FFFF80", background: "transparent", height: "32px" }}
+                              onClick={() => { setRenameId(null); setRenameValue("") }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="text-white/85">{k.name}</span>
+                            <button
+                              className="rounded-full px-3 text-xs font-medium transition"
+                              style={{ color: "#00FFFF", border: "1px solid #00FFFF80", background: "transparent", height: "28px" }}
+                              onClick={() => { setRenameId(k.id); setRenameValue(k.name) }}
+                            >
+                              Rename
+                            </button>
+                          </div>
+                        )}
+                        <div className="mt-1 text-xs text-white/50">Created {new Date(k.createdAt).toLocaleDateString()}</div>
+                      </div>
+                      <div className="col-span-3">
+                        <div className="truncate text-white/80">{k.keyPreview}</div>
+                        <div className="text-xs text-white/50">Full key is shown only once when created</div>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-white/80">{k.isActive ? "Active" : "Inactive"}</span>
+                      </div>
+                      <div className="col-span-2 text-white/80">{k.usageCount}</div>
+                      <div className="col-span-1 text-right">
+                        <button
+                          className="rounded-full px-3 text-xs font-medium transition disabled:opacity-50"
+                          style={{ color: "#00FFFF", border: "1px solid #00FFFF80", background: "transparent", height: "28px" }}
+                          onClick={() => deactivateKey(k.id)}
+                          disabled={!k.isActive}
+                        >
+                          Deactivate
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   )
 }
 
 /* Client bits for interactivity */
-function MaskedKey() {
-  return (
-    <input
-      readOnly
-      value="cs_live_********************************"
-      aria-label="API key (masked)"
-      className="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs outline-none md:text-sm text-white"
-      style={{ borderColor: "rgba(255,255,255,0.16)" }}
-    />
-  )
-}
-
-function CopyKeyButton() {
-  return (
-    <button
-      type="button"
-      aria-label="Copy API key"
-      className="rounded-full px-4 text-sm font-medium transition"
-      style={{ color: "#00FFFF", border: "1px solid #00FFFF80", background: "transparent", height: "36px" }}
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText("cs_live_********************************")
-          // no toast to keep it minimal
-        } catch {
-          // ignore
-        }
-      }}
-    >
-      Copy
-    </button>
-  )
-}
-
 function PreferencesCard() {
   return (
     <Card style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}>
