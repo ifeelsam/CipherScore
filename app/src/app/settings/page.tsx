@@ -463,7 +463,7 @@ function ApiKeysManager() {
                             onClick={() => { setPendingDeleteId(k.id); setConfirmOpen(true) }}
                             disabled={!k.isActive}
                           >
-                            Deactivate
+                            Delete
                           </button>
                         </div>
                       </div>
