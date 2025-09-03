@@ -37,6 +37,7 @@ import apiKeyRoutes from './routes/api-keys.js';
 import userRoutes from './routes/users.js';
 import walletAuthRoutes from './routes/wallet-auth.js';
 import userApiKeyRoutes from './routes/user-api-keys.js';
+import userProfileRoutes from './routes/user-profile.js'
 
 // Import middleware
 import authenticateAPIKey, { requireAdmin } from './middleware/auth.js';
@@ -445,6 +446,7 @@ app.use('/admin', requireAdmin, apiKeyRoutes);
 
 // Frontend user routes (require session token)
 app.use('/dashboard/api-keys', userApiKeyRoutes); // API key management for frontend
+app.use('/dashboard/profile', userProfileRoutes);
 
 // Protected API routes (require API key)
 app.use('/', authenticateAPIKey, walletRoutes);

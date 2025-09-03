@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
@@ -12,6 +12,25 @@ import { WalletMultiButton } from "@solana/wallet-adapter-react-ui"
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const { connected, publicKey, disconnect } = useWallet()
+  const [displayName, setDisplayName] = useState<string>("User")
+
+  useEffect(() => {
+    try {
+      const stored = typeof window !== "undefined" ? window.localStorage.getItem("cipher_session") : null
+      if (!stored) return
+      const parsed = JSON.parse(stored) as { token: string; expiresAt: string; walletAddress: string }
+      if (new Date(parsed.expiresAt).getTime() <= Date.now()) return
+      const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000"
+      fetch(`${baseUrl}/dashboard/profile`, { headers: { "X-Session-Token": parsed.token } })
+        .then(r => r.json())
+        .then(json => {
+          if (json?.success) {
+            setDisplayName(json.data?.name || "User")
+          }
+        })
+        .catch(() => {})
+    } catch {}
+  }, [])
 
   return (
           <aside
@@ -105,7 +124,7 @@ export function Sidebar() {
           )}
         >
           <Avatar className="h-8 w-8 ring-1 ring-white/10">
-            <AvatarImage src={`https://api.dicebear.com/9.x/glass/svg?seed=${publicKey}}`} alt="" />
+            <AvatarImage src={`https://api.dicebear.com/9.x/glass/svg?seed=${publicKey ? publicKey.toBase58() : 'user'}`} alt="" />
           </Avatar>
           <div
             className={cn(
@@ -113,7 +132,7 @@ export function Sidebar() {
               collapsed ? "opacity-0 pointer-events-none select-none" : "opacity-100",
             )}
           >
-            <p className="truncate text-sm font-medium text-white/90">Developer Name</p>
+            <p className="truncate text-sm font-medium text-white/90">{displayName}</p>
             <p className="truncate text-xs text-white/60">{connected && publicKey ? `${publicKey.toBase58().slice(0, 8)}...${publicKey.toBase58().slice(-4)}` : "Not connected"}</p>
           </div>
         </Link>

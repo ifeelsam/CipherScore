@@ -31,33 +31,7 @@ export default function SettingsPage() {
 
         <div className="mx-auto max-w-6xl space-y-6 p-6">
           {/* Account */}
-          <Card style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}>
-            <CardHeader>
-              <CardTitle className="text-white">Account</CardTitle>
-              <CardDescription className="text-white/70">Basic profile information</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-2">
-                  <Label htmlFor="name" className="text-white/80">
-                    Name
-                  </Label>
-                  <Input id="name" placeholder="Developer Name" className="text-white placeholder:text-white/40" />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="email" className="text-white/80">
-                    Email
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="developer@cipherscore.dev"
-                    className="text-white placeholder:text-white/40"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <ProfileCard />
 
           {/* API Keys */}
           <ApiKeysManager />
@@ -67,6 +41,103 @@ export default function SettingsPage() {
         </div>
       </section>
     </main>
+  )
+}
+
+function ProfileCard() {
+  const backendBaseUrl = useMemo(() => process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000", [])
+  const [sessionToken, setSessionToken] = useState<string | null>(null)
+  const [profileName, setProfileName] = useState("")
+  const [profileEmail, setProfileEmail] = useState("")
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    try {
+      const stored = typeof window !== "undefined" ? window.localStorage.getItem("cipher_session") : null
+      if (stored) {
+        const parsed = JSON.parse(stored) as { token: string; expiresAt: string; walletAddress: string }
+        if (new Date(parsed.expiresAt).getTime() > Date.now()) {
+          setSessionToken(parsed.token)
+        }
+      }
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    if (!sessionToken) { setLoading(false); return }
+    let cancelled = false
+    async function fetchProfile() {
+      setLoading(true)
+      try {
+        const res = await fetch(`${backendBaseUrl}/dashboard/profile`, { headers: { "X-Session-Token": sessionToken as string } })
+        const json = await res.json()
+        if (res.ok && json.success && !cancelled) {
+          setProfileName(json.data.name || "")
+          setProfileEmail(json.data.email || "")
+        }
+      } catch {}
+      finally { if (!cancelled) setLoading(false) }
+    }
+    fetchProfile()
+    return () => { cancelled = true }
+  }, [sessionToken, backendBaseUrl])
+
+  return (
+    <Card style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}>
+      <CardHeader>
+        <CardTitle className="text-white">Account</CardTitle>
+        <CardDescription className="text-white/70">Basic profile information</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {!sessionToken ? (
+          <div className="rounded-xl p-4 text-sm" style={{ background: "#121212", border: "1px solid rgba(255,255,255,0.06)", color: "#FFFFFFB2" }}>
+            Connect your wallet to edit profile.
+          </div>
+        ) : loading ? (
+          <div className="rounded-xl p-4 text-sm" style={{ background: "#121212", border: "1px solid rgba(255,255,255,0.06)", color: "#FFFFFFB2" }}>
+            Loading profile...
+          </div>
+        ) : (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="name" className="text-white/80">Name</Label>
+                <Input id="name" value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="Developer Name" className="text-white placeholder:text-white/40" />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="email" className="text-white/80">Email</Label>
+                <Input id="email" type="email" value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} placeholder="developer@cipherscore.dev" className="text-white placeholder:text-white/40" />
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Button
+                className="rounded-full bg-[#8A2BE2] px-4 text-white shadow-sm transition hover:shadow-[0_0_24px_rgba(138,43,226,0.45)] hover:-translate-y-[1px]"
+                onClick={async () => {
+                  if (!sessionToken) return
+                  try {
+                    const res = await fetch(`${backendBaseUrl}/dashboard/profile`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json', 'X-Session-Token': sessionToken },
+                      body: JSON.stringify({ name: profileName || null, email: profileEmail || null })
+                    })
+                    const json = await res.json()
+                    if (res.ok && json.success) {
+                      try { toast({ title: 'Profile updated' }) } catch {}
+                    } else {
+                      try { toast({ title: 'Update failed', description: json.error || 'Try again later' }) } catch {}
+                    }
+                  } catch {
+                    try { toast({ title: 'Update failed', description: 'Network error' }) } catch {}
+                  }
+                }}
+              >
+                Save changes
+              </Button>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
@@ -180,7 +251,7 @@ function ApiKeysManager() {
         })
         const json = await res.json()
         if (res.ok && json.success) {
-          if (!cancelled) setKeys(json.data as SanitizedKey[])
+          if (!cancelled) setKeys((json.data as any[]).filter((k) => k.isActive))
         }
       } catch (e) {
         // ignore
@@ -213,7 +284,7 @@ function ApiKeysManager() {
           headers: { "X-Session-Token": sessionToken as string },
         })
         const listJson = await list.json()
-        if (list.ok && listJson.success) setKeys(listJson.data as SanitizedKey[])
+        if (list.ok && listJson.success) setKeys((listJson.data as any[]).filter((k: any) => k.isActive))
       }
     } catch {}
     finally {
@@ -229,7 +300,7 @@ function ApiKeysManager() {
         headers: { "X-Session-Token": sessionToken as string },
       })
       if (res.ok) {
-        setKeys((prev) => prev.map(k => k.id === id ? { ...k, isActive: false } : k))
+        setKeys((prev) => prev.filter(k => k.id !== id))
       }
     } catch {}
   }
@@ -438,7 +509,7 @@ function PreferencesCard() {
           style={{ background: "#121212", border: "1px solid rgba(255,255,255,0.06)" }}
         >
           <div>
-            <p className="text-sm font-medium text-white">Email alerts</p>
+            <p className="text-sm font-medium text_WHITE">Email alerts</p>
             <p className="text-xs text-white/60">Receive usage alerts and updates</p>
           </div>
           <ClientSwitch />
