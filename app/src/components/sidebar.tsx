@@ -14,10 +14,10 @@ export function Sidebar() {
   const { connected, publicKey, disconnect } = useWallet()
 
   return (
-    <aside
+          <aside
       aria-label="Primary"
       className={cn(
-        "relative flex h-dvh flex-col border-r border-white/10 transition-[width]",
+        "sticky top-0 flex h-dvh flex-col border-r border-white/10 transition-[width]",
         collapsed ? "w-[72px]" : "w-[240px]",
       )}
       style={{
