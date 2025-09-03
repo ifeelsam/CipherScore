@@ -87,7 +87,7 @@ export default function DocsPage() {
               <p className="mt-2 text-lg text-white/70">Use the local TypeScript SDK for a simple client integration.</p>
               <CodeBlock
                 language="ts"
-                code={`import { CipherSDK } from '@cipher/sdk'\n\nconst sdk = new CipherSDK({\n  baseUrl: '${backendBaseUrl}',\n  apiKey: 'cypher_...'\n})\n\n// Wallet-only mode\nawait sdk.calculateFromWallet('<SOLANA_WALLET_ADDRESS>')\n\n// Manual mode\nawait sdk.calculateFromMetrics({\n  wallet_age_days: 365,\n  transaction_count: 120,\n  total_volume_usd: 50000,\n  unique_protocols: 10,\n  defi_positions: 3,\n  nft_count: 4,\n  failed_txs: 2,\n  sol_balance: 100000000\n})\n\n// Wallet status\nawait sdk.walletStatus('<SOLANA_WALLET_ADDRESS>')`}
+                code={`import { CipherSDK } from '@cipher/sdk'\n\n// Defaults: baseUrl from CIPHERSCORE_BASE_URL or https://api.cipherscore.xyz,\n// API key from CIPHERSCORE_API_KEY. Override if needed:\nconst sdk = new CipherSDK({\n  // baseUrl: 'https://api.cipherscore.xyz',\n  // apiKey: 'cypher_...',\n})\n\nawait sdk.calculateFromWallet('<SOLANA_WALLET_ADDRESS>')`}
               />
             </div>
 
