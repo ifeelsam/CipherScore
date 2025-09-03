@@ -63,6 +63,7 @@ export default function Page() {
     tier?: "NORMAL" | "PREMIUM"
   }>({ used: 0, limit: 0, remaining: 0 })
   const [loadingUsage, setLoadingUsage] = useState(false)
+  const [displayName, setDisplayName] = useState<string>("User")
 
   // Session bootstrap using wallet signature
   useEffect(() => {
@@ -173,6 +174,25 @@ export default function Page() {
     }
   }, [sessionToken, backendBaseUrl])
 
+  // Fetch profile display name
+  useEffect(() => {
+    let cancelled = false
+    async function fetchProfile() {
+      if (!sessionToken) return
+      try {
+        const res = await fetch(`${backendBaseUrl}/dashboard/profile`, {
+          headers: { "X-Session-Token": sessionToken },
+        })
+        const json = await res.json()
+        if (!cancelled && res.ok && json.success) {
+          setDisplayName(json.data?.name || "User")
+        }
+      } catch {}
+    }
+    fetchProfile()
+    return () => { cancelled = true }
+  }, [sessionToken, backendBaseUrl])
+
   const percentUsed = useMemo(() => {
     if (!usage.limit || usage.limit <= 0) return 0
     const p = Math.round((usage.used / usage.limit) * 100)
@@ -197,7 +217,7 @@ export default function Page() {
           <header className="sticky top-0 z-10 border-b border-white/10 bg-[#121212]/80 px-6 py-4 backdrop-blur">
             <div className="mx-auto flex max-w-6xl items-center justify-between">
               <div>
-                <h1 className="text-pretty text-lg font-semibold text-white">Welcome back, Developer</h1>
+                <h1 className="text-pretty text-lg font-semibold text-white">Welcome back, {displayName}</h1>
                 <p className="text-sm text-white/70">Your API is performing well today</p>
               </div>
               <div className="flex items-center gap-3">
@@ -234,7 +254,7 @@ export default function Page() {
                 {loadingUsage ? "—" : `${usage.remaining} left`}
               </h2>
               {/* Progress rail */}
-              <div className="mt-4 h-2 w-full rounded-full bg-white/10">
+              <div className="mt-4 h-2 w-full rounded-full bg_white/10">
                 <div
                   className="h-2 rounded-full"
                   style={{
@@ -280,7 +300,7 @@ export default function Page() {
                   aria-valuemax={100}
                 />
               </div>
-              <div className="mt-3 flex items-center justify-between">
+              <div className="mt-3 flex items-center justify_between">
                 <span className="text-xs text-white/60">Next billing: Feb 15</span>
                 <a
                   href="/subscription"
@@ -291,7 +311,7 @@ export default function Page() {
                     background: "transparent",
                   }}
                 >
-                  Manage Plan
+                  {usage.tier === "PREMIUM" ? "Manage Plan" : "Upgrade Plan"}
                 </a>
               </div>
             </div>
@@ -310,7 +330,7 @@ export default function Page() {
               style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}
             >
               <p className="text-xs text-white/60">Last Request</p>
-              <p className="mt-1 text-xl font-semibold text-white">—</p>
+              <p className="mt-1 text-xl font-semibold text_white">—</p>
             </div>
             <div
               className="rounded-xl p-4"
