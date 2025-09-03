@@ -274,7 +274,7 @@ export default function Page() {
                 </span>
                 <a
                   href="/subscription"
-                  className="rounded-full bg-[#8A2BE2] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition hover:shadow-[0_0_16px_rgba(138,43,226,0.35)]"
+                  className="rounded-full bg-[#8A2BE2] px-5 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:shadow-[0_0_16px_rgba(138,43,226,0.35)]"
                 >
                   Get More Credits
                 </a>
@@ -300,11 +300,11 @@ export default function Page() {
                   aria-valuemax={100}
                 />
               </div>
-              <div className="mt-3 flex items-center justify_between">
+              <div className="mt-3 flex items-center justify-between">
                 <span className="text-xs text-white/60">Next billing: Feb 15</span>
                 <a
                   href="/subscription"
-                  className="rounded-full px-3 py-1.5 text-xs font-medium transition"
+                  className="rounded-full px-5 py-1.5 text-sm font-semibold transition"
                   style={{
                     color: "#00FFFF",
                     border: "1px solid #00FFFF80",
