@@ -124,17 +124,7 @@ class DatabaseService {
       },
     });
 
-    // If this is a credit score calculation, increment monthly usage
-    if (endpoint.includes('calculate_credit_score')) {
-      await this.prisma.user.update({
-        where: { id: apiKey.userId },
-        data: {
-          monthlyUsage: {
-            increment: 1,
-          },
-        },
-      });
-    }
+
   }
 
   // Get all API keys

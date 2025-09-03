@@ -25,6 +25,11 @@ declare global {
 // API Key authentication middleware
 export const authenticateAPIKey = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    // Skip CORS preflight
+    if (req.method === 'OPTIONS') {
+      return next();
+    }
+
     // Get API key from headers
     const apiKey = req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
 
@@ -68,8 +73,8 @@ export const authenticateAPIKey = async (req: Request, res: Response, next: Next
 
     // Log API key usage
     const endpoint = `${req.method} ${req.path}`;
-    const ipAddress = req.ip || req.connection.remoteAddress;
-    const userAgent = req.headers['user-agent'];
+    const ipAddress = req.ip || (req.connection as any).remoteAddress;
+    const userAgent = req.headers['user-agent'] as string | undefined;
 
     await db.logAPIKeyUsage(validation.key!.id, endpoint, ipAddress, userAgent);
 

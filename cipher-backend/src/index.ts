@@ -26,6 +26,7 @@ import {
 import * as fs from "fs";
 import * as os from "os";
 import cors from 'cors';
+import { db } from './database.js'
 
 // Import route modules
 import healthRoutes from './routes/health.js';
@@ -467,52 +468,86 @@ app.post('/calculate_credit_score', authenticateAPIKey, async (req, res) => {
       });
     }
 
-    const metrics: WalletMetrics = req.body;
-
-    // Validate required fields
-    const required_fields = [
-      'wallet_age_days',
-      'transaction_count',
-      'total_volume_usd',
-      'unique_protocols',
-      'defi_positions',
-      'nft_count',
-      'failed_txs',
-      'sol_balance'
-    ];
-
-    for (const field of required_fields) {
-      if (typeof metrics[field as keyof WalletMetrics] !== 'number') {
+    // Wallet-only mode: accept { wallet_address } and fetch on-chain metrics
+    let metrics: WalletMetrics | null = null;
+    const walletAddress = (req.body?.wallet_address || req.body?.walletAddress) as string | undefined;
+    if (walletAddress) {
+      try {
+        const walletPubkey = new PublicKey(walletAddress);
+        console.log(`Wallet-only mode for ${walletPubkey.toBase58()}`);
+        metrics = await fetchWalletMetrics(walletPubkey, provider.connection);
+      } catch (e: any) {
         return res.status(400).json({
-          error: `Missing or invalid field: ${field}`,
-          expected_type: 'number',
+          error: 'Invalid wallet address or failed to fetch on-chain data',
+          details: e?.message,
           timestamp: new Date().toISOString()
         });
       }
     }
 
-    // Validate ranges
-    if (metrics.wallet_age_days < 0) {
-      return res.status(400).json({
-        error: 'wallet_age_days must be non-negative',
-        timestamp: new Date().toISOString()
-      });
-    }
-    if (metrics.transaction_count < 0) {
-      return res.status(400).json({
-        error: 'transaction_count must be non-negative',
-        timestamp: new Date().toISOString()
-      });
-    }
-    if (metrics.total_volume_usd < 0) {
-      return res.status(400).json({
-        error: 'total_volume_usd must be non-negative',
-        timestamp: new Date().toISOString()
-      });
+    // Manual mode fallback
+    if (!metrics) {
+      const body = req.body as WalletMetrics;
+
+      // Validate required fields
+      const required_fields = [
+        'wallet_age_days',
+        'transaction_count',
+        'total_volume_usd',
+        'unique_protocols',
+        'defi_positions',
+        'nft_count',
+        'failed_txs',
+        'sol_balance'
+      ];
+
+      for (const field of required_fields) {
+        if (typeof body[field as keyof WalletMetrics] !== 'number') {
+          return res.status(400).json({
+            error: `Missing or invalid field: ${field}`,
+            expected_type: 'number',
+            timestamp: new Date().toISOString()
+          });
+        }
+      }
+
+      // Validate ranges
+      if (body.wallet_age_days < 0) {
+        return res.status(400).json({
+          error: 'wallet_age_days must be non-negative',
+          timestamp: new Date().toISOString()
+        });
+      }
+      if (body.transaction_count < 0) {
+        return res.status(400).json({
+          error: 'transaction_count must be non-negative',
+          timestamp: new Date().toISOString()
+        });
+      }
+      if (body.total_volume_usd < 0) {
+        return res.status(400).json({
+          error: 'total_volume_usd must be non-negative',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      metrics = body;
     }
 
     console.log("Starting credit score calculation...");
     const result = await calculate_credit_score_on_chain(metrics);
+
+    // Increment monthly usage ONLY on successful calculation
+    if ((result as any)?.success && (req as any)?.apiKey?.user?.id) {
+      try {
+        await db.prisma.user.update({
+          where: { id: (req as any).apiKey.user.id },
+          data: { monthlyUsage: { increment: 1 } },
+        });
+      } catch (e) {
+        console.error('Failed to increment monthly usage:', e);
+      }
+    }
 
     res.json(result);
 
@@ -525,6 +560,35 @@ app.post('/calculate_credit_score', authenticateAPIKey, async (req, res) => {
     });
   }
 });
+
+// Fetch minimal on-chain metrics for wallet-only mode
+async function fetchWalletMetrics(walletPubkey: PublicKey, connection: Connection): Promise<WalletMetrics> {
+  const balance = await connection.getBalance(walletPubkey);
+  const signatures = await connection.getSignaturesForAddress(walletPubkey, { limit: 100 });
+  const transactionCount = signatures.length;
+
+  let walletAgeDays = 0;
+  if (signatures.length > 0) {
+    const oldestTx = signatures[signatures.length - 1];
+    if (oldestTx?.blockTime) {
+      const ageMs = Date.now() - oldestTx.blockTime * 1000;
+      walletAgeDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
+    }
+  }
+
+  // Lightweight protocol/NFT estimation skipped to avoid rate limits
+  const metrics: WalletMetrics = {
+    wallet_age_days: walletAgeDays,
+    transaction_count: transactionCount,
+    total_volume_usd: 0,
+    unique_protocols: 0,
+    defi_positions: 0,
+    nft_count: 0,
+    failed_txs: 0,
+    sol_balance: balance,
+  };
+  return metrics;
+}
 
 // Helper functions
 
