@@ -105,8 +105,7 @@ export function Sidebar() {
           )}
         >
           <Avatar className="h-8 w-8 ring-1 ring-white/10">
-            <AvatarImage src="/developer-avatar-placeholder.png" alt="" />
-            <AvatarFallback className="bg-white/10 text-white">DV</AvatarFallback>
+            <AvatarImage src={`https://api.dicebear.com/9.x/glass/svg?seed=${publicKey}}`} alt="" />
           </Avatar>
           <div
             className={cn(
