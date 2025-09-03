@@ -18,11 +18,13 @@ function escapeHtml(input: string) {
 
 function highlightTS(src: string) {
   let code = escapeHtml(src)
-  code = code.replace(/(\/\/.*$)/gm, '<span style="color:#6b7280">$1</span>')
-  code = code.replace(/(['\"]).*?\1/g, '<span style="color:#22d3ee">$&</span>')
+  // Highlight strings, keywords, literals first
+  code = code.replace(/(['"]).*?\1/g, '<span style="color:#22d3ee">$&</span>')
   code = code.replace(/\b(const|let|var|import|from|export|async|await|return|new|class|interface|type|extends)\b/g, '<span style="color:#a78bfa">$1</span>')
   code = code.replace(/\b(true|false|null|undefined)\b/g, '<span style="color:#fca5a5">$1</span>')
   code = code.replace(/\b([0-9]+)\b/g, '<span style="color:#fde68a">$1</span>')
+  // Finally, wrap comments so we don't re-highlight injected spans
+  code = code.replace(/(\/\/.*$)/gm, '<span style="color:#6b7280">$1</span>')
   return code
 }
 
@@ -39,7 +41,7 @@ function highlightBash(src: string) {
   let code = escapeHtml(src)
   code = code.replace(/(^|\s)(curl|export|bun|npm|yarn)(?=\s)/g, '<span style="color:#a78bfa">$2</span>')
   code = code.replace(/\s(-{1,2}[a-zA-Z-]+)/g, ' <span style="color:#fca5a5">$1</span>')
-  code = code.replace(/(['\"]).*?\1/g, '<span style="color:#22d3ee">$&</span>')
+  code = code.replace(/(['"]).*?\1/g, '<span style="color:#22d3ee">$&</span>')
   return code
 }
 

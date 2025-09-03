@@ -491,46 +491,46 @@ app.post('/calculate_credit_score', authenticateAPIKey, async (req, res) => {
     if (!metrics) {
       const body = req.body as WalletMetrics;
 
-      // Validate required fields
-      const required_fields = [
-        'wallet_age_days',
-        'transaction_count',
-        'total_volume_usd',
-        'unique_protocols',
-        'defi_positions',
-        'nft_count',
-        'failed_txs',
-        'sol_balance'
-      ];
+    // Validate required fields
+    const required_fields = [
+      'wallet_age_days',
+      'transaction_count',
+      'total_volume_usd',
+      'unique_protocols',
+      'defi_positions',
+      'nft_count',
+      'failed_txs',
+      'sol_balance'
+    ];
 
-      for (const field of required_fields) {
+    for (const field of required_fields) {
         if (typeof body[field as keyof WalletMetrics] !== 'number') {
-          return res.status(400).json({
-            error: `Missing or invalid field: ${field}`,
-            expected_type: 'number',
-            timestamp: new Date().toISOString()
-          });
-        }
+        return res.status(400).json({
+          error: `Missing or invalid field: ${field}`,
+          expected_type: 'number',
+          timestamp: new Date().toISOString()
+        });
       }
+    }
 
-      // Validate ranges
+    // Validate ranges
       if (body.wallet_age_days < 0) {
-        return res.status(400).json({
-          error: 'wallet_age_days must be non-negative',
-          timestamp: new Date().toISOString()
-        });
-      }
+      return res.status(400).json({
+        error: 'wallet_age_days must be non-negative',
+        timestamp: new Date().toISOString()
+      });
+    }
       if (body.transaction_count < 0) {
-        return res.status(400).json({
-          error: 'transaction_count must be non-negative',
-          timestamp: new Date().toISOString()
-        });
-      }
+      return res.status(400).json({
+        error: 'transaction_count must be non-negative',
+        timestamp: new Date().toISOString()
+      });
+    }
       if (body.total_volume_usd < 0) {
-        return res.status(400).json({
-          error: 'total_volume_usd must be non-negative',
-          timestamp: new Date().toISOString()
-        });
+      return res.status(400).json({
+        error: 'total_volume_usd must be non-negative',
+        timestamp: new Date().toISOString()
+      });
       }
 
       metrics = body;
