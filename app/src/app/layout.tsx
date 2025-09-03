@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cipher App",
-  description: "Secure Solana wallet authentication",
+  title: "Dashboard - CipherScore",
+  description: "Dashboard for CipherScore",
 };
 
 export default function RootLayout({
