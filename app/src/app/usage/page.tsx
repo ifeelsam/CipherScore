@@ -1,130 +1,174 @@
-import { Sidebar } from "@/components/sidebar"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
+'use client'
+
+import { Sidebar } from '@/components/sidebar'
+import { WalletAuthGuard } from '@/components/wallet-auth-guard'
+import { useEffect, useMemo, useState } from 'react'
+
+interface ApiKeyItem {
+  id: string
+  name: string
+  createdAt: string
+  lastUsed?: string | null
+  isActive: boolean
+  usageCount: number
+  keyPreview: string
+  recentUsage?: Array<{
+    id: string
+    endpoint: string
+    timestamp: string
+  }>
+}
 
 export default function UsagePage() {
+  const backendBaseUrl = useMemo(() => process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000', [])
+  const [sessionToken, setSessionToken] = useState<string | null>(null)
+  const [keys, setKeys] = useState<ApiKeyItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedKeyId, setSelectedKeyId] = useState<string | 'all'>('all')
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    try {
+      const stored = typeof window !== 'undefined' ? window.localStorage.getItem('cipher_session') : null
+      if (stored) {
+        const parsed = JSON.parse(stored) as { token: string; expiresAt: string; walletAddress: string }
+        if (new Date(parsed.expiresAt).getTime() > Date.now()) setSessionToken(parsed.token)
+      }
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    if (!sessionToken) { setLoading(false); return }
+    let cancelled = false
+
+    async function fetchKeysWithUsage() {
+      setLoading(true)
+      try {
+        const listRes = await fetch(`${backendBaseUrl}/dashboard/api-keys/list`, {
+          headers: { 'X-Session-Token': sessionToken as string }
+        })
+        const listJson = await listRes.json()
+        if (!listRes.ok || !listJson.success) { setLoading(false); return }
+        const baseKeys: ApiKeyItem[] = (listJson.data as any[]).filter(k => k.isActive)
+
+        // Fetch recent usage per key in parallel (limit to 20 per key)
+        const details = await Promise.all(baseKeys.map(async (k) => {
+          const res = await fetch(`${backendBaseUrl}/dashboard/api-keys/${k.id}`, {
+            headers: { 'X-Session-Token': sessionToken as string }
+          })
+          const json = await res.json()
+          if (res.ok && json.success) {
+            return { ...k, recentUsage: (json.data?.recentUsage || []) as ApiKeyItem['recentUsage'] }
+          }
+          return k
+        }))
+
+        if (!cancelled) setKeys(details)
+      } catch {
+        if (!cancelled) setKeys([])
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    fetchKeysWithUsage()
+    return () => { cancelled = true }
+  }, [sessionToken, backendBaseUrl])
+
+  const filtered = useMemo(() => {
+    const byKey = selectedKeyId === 'all' ? keys : keys.filter(k => k.id === selectedKeyId)
+    if (!search.trim()) return byKey
+    const q = search.toLowerCase()
+    return byKey.map(k => ({
+      ...k,
+      recentUsage: (k.recentUsage || []).filter(u => u.endpoint.toLowerCase().includes(q))
+    }))
+  }, [keys, selectedKeyId, search])
+
   return (
-    <main className="flex min-h-dvh" style={{ background: "#121212" }}>
-      {/* Sidebar */}
-      <Sidebar />
-
-      {/* Content */}
-      <section className="flex-1">
-        <header className="sticky top-0 z-10 border-b border-white/10 bg-[#121212]/80 px-6 py-4 backdrop-blur">
-          <div className="mx-auto flex max-w-6xl items-center justify-between">
-            <div>
-              <h1 className="text-pretty text-lg font-semibold text-white">Usage</h1>
-              <p className="text-sm text-white/70">Monitor your credits and API traffic</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <a
-                href="/subscription"
-                className="rounded-full bg-[#8A2BE2] px-4 py-2 text-sm font-medium text-white shadow-md transition hover:shadow-[0_0_24px_rgba(138,43,226,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00FFFF]/60"
-              >
-                Upgrade Plan
-              </a>
-            </div>
-          </div>
-        </header>
-
-        <div className="mx-auto max-w-6xl space-y-6 p-6">
-          {/* Credits */}
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <CardHeader>
-                <CardTitle className="text-white">Free Credits</CardTitle>
-                <CardDescription className="text-white/70">Resets in 12 days</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-semibold text-white">847 left</p>
-                <div className="mt-4">
-                  <Progress value={85} className="h-2 bg-white/10" aria-label="Free credits used" />
-                  <div className="mt-2 flex items-center justify-between text-xs text-white/60">
-                    <span>Used 85%</span>
-                    <span>Remaining 15%</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <CardHeader>
-                <CardTitle className="text-white">Premium Credits</CardTitle>
-                <CardDescription className="text-white/70">Next billing: Feb 15</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-semibold text-white">Unlimited</p>
-                <div className="mt-4">
-                  <Progress value={6} className="h-2 bg-white/10" aria-label="Premium credits used" />
-                  <div className="mt-2 flex items-center justify-between text-xs text-white/60">
-                    <span>Used 6%</span>
-                    <span>Remaining 94%</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Simple stats */}
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div
-              className="rounded-xl p-4"
-              style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}
-            >
-              <p className="text-xs text-white/60">API Calls This Month</p>
-              <p className="mt-1 text-xl font-semibold text-white">1,247</p>
-            </div>
-            <div
-              className="rounded-xl p-4"
-              style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}
-            >
-              <p className="text-xs text-white/60">Success Rate</p>
-              <p className="mt-1 text-xl font-semibold text-white">99.6%</p>
-            </div>
-            <div
-              className="rounded-xl p-4"
-              style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}
-            >
-              <p className="text-xs text-white/60">Avg Latency</p>
-              <p className="mt-1 text-xl font-semibold text-white">142 ms</p>
-            </div>
-          </div>
-
-          {/* Minimal endpoint breakdown */}
-          <div className="grid gap-4">
-            <div
-              className="rounded-xl p-4"
-              style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}
-            >
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-white">Top Endpoints</p>
-                <a
-                  href="/docs"
-                  className="rounded-full px-3 py-1.5 text-xs font-medium transition"
-                  style={{ color: "#00FFFF", border: "1px solid #00FFFF80", background: "transparent" }}
-                >
-                  View API Docs
-                </a>
+    <WalletAuthGuard>
+      <main className="flex min-h-dvh" style={{ background: '#121212' }}>
+        <Sidebar />
+        <section className="flex-1">
+          <header className="sticky top-0 z-10 border-b border-white/10 bg-[#121212]/80 px-6 py-4 backdrop-blur">
+            <div className="mx-auto flex max-w-6xl items-center justify-between">
+              <div>
+                <h1 className="text-pretty text-lg font-semibold text-white">Usage</h1>
+                <p className="text-sm text-white/70">See which key was used, where, and when</p>
               </div>
-              <ul className="mt-3 space-y-2 text-sm">
-                <li className="flex items-center justify-between text-white/80">
-                  <span className="truncate">POST /v1/scores</span>
-                  <span className="tabular-nums text-white/60">532 calls</span>
-                </li>
-                <li className="flex items-center justify-between text-white/80">
-                  <span className="truncate">GET /v1/scores/:id</span>
-                  <span className="tabular-nums text-white/60">418 calls</span>
-                </li>
-                <li className="flex items-center justify-between text-white/80">
-                  <span className="truncate">POST /v1/batch</span>
-                  <span className="tabular-nums text-white/60">297 calls</span>
-                </li>
-              </ul>
             </div>
+          </header>
+
+          <div className="mx-auto max-w-6xl space-y-6 p-6">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div>
+                <label className="block text-xs text-white/60 mb-1">Filter by key</label>
+                <select
+                  value={selectedKeyId}
+                  onChange={(e) => setSelectedKeyId(e.target.value as any)}
+                  className="w-full rounded-md bg-transparent px-3 py-2 text-sm text-white"
+                  style={{ border: '1px solid rgba(255,255,255,0.16)' }}
+                >
+                  <option value="all" className="bg-[#1A1A1A]">All keys</option>
+                  {keys.map(k => (
+                    <option key={k.id} value={k.id} className="bg-[#1A1A1A]">{k.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs text-white/60 mb-1">Search endpoint</label>
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="e.g. POST /calculate_credit_score"
+                  className="w-full rounded-md bg-transparent px-3 py-2 text-sm text-white placeholder:text-white/40"
+                  style={{ border: '1px solid rgba(255,255,255,0.16)' }}
+                />
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="rounded-xl p-4 text-sm text-white/70" style={{ background: '#1A1A1A', border: '1px solid rgba(255,255,255,0.06)' }}>
+                Loading usage...
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {filtered.map(k => (
+                  <div key={k.id} className="rounded-2xl p-6" style={{ background: '#1A1A1A', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-white/60">API Key</p>
+                        <h2 className="text-xl font-semibold text-white">{k.name}</h2>
+                        <p className="text-xs text-white/50 mt-1">{k.keyPreview}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-white/60">Total requests</p>
+                        <p className="text-lg font-semibold text-white">{k.usageCount}</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 border-t border-white/10 pt-4">
+                      <p className="text-xs text-white/60 mb-2">Recent usage</p>
+                      {(k.recentUsage && k.recentUsage.length > 0) ? (
+                        <ul className="divide-y divide-white/5">
+                          {k.recentUsage!.map(u => (
+                            <li key={u.id} className="flex items-center justify-between py-2 text-sm">
+                              <span className="text-white/80">{u.endpoint}</span>
+                              <span className="text-white/50">{new Date(u.timestamp).toLocaleString()}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="text-sm text-white/60">No recent usage</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-      </section>
-    </main>
+        </section>
+      </main>
+    </WalletAuthGuard>
   )
 }
 
