@@ -37,13 +37,21 @@ export default function DocsPage() {
               style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}
             >
               <h3 className="text-lg font-medium text-white">Calculate Credit Score</h3>
-              <p className="mt-2 text-sm text-white/70">Send wallet metrics. Use your API key.</p>
+              <p className="mt-2 text-sm text-white/70">Wallet-only mode: just send a wallet address. Use your API key.</p>
               <pre className="mt-3 overflow-x-auto rounded-2xl p-4 text-xs" style={{ background: "#0F0F0F", border: "1px solid rgba(255,255,255,0.06)", color: "#EDEDED" }}>
 {`POST /calculate_credit_score
 X-API-Key: <YOUR_API_KEY>
 Content-Type: application/json
 
 {
+  "wallet_address": "<SOLANA_WALLET_ADDRESS>"
+}
+
+# Response: { success, data: { wallet, score, risk_level, transaction_signature, computation_offset }, ... }`}
+              </pre>
+              <p className="mt-4 text-sm text-white/50">Optional manual mode (send metrics yourself):</p>
+              <pre className="mt-2 overflow-x-auto rounded-2xl p-4 text-xs" style={{ background: "#0F0F0F", border: "1px solid rgba(255,255,255,0.06)", color: "#EDEDED" }}>
+{`{
   "wallet_age_days": 365,
   "transaction_count": 120,
   "total_volume_usd": 50000,
@@ -51,10 +59,8 @@ Content-Type: application/json
   "defi_positions": 3,
   "nft_count": 4,
   "failed_txs": 2,
-  "sol_balance": 100000000 // lamports
-}
-
-# Response: { success, data: { wallet, score, risk_level, transaction_signature, computation_offset }, ... }`}
+  "sol_balance": 100000000
+}`}
               </pre>
             </div>
 
