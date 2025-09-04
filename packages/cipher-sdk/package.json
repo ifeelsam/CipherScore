@@ -1,18 +1,38 @@
 {
-  "name": "@cipher/sdk",
+  "name": "cipherscore-sdk",
   "version": "0.1.0",
+  "description": "TypeScript SDK for CipherScore API",
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "keywords": ["cipher", "sdk", "solana", "credit", "score", "api"],
+  "license": "ISC",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18",
+    "bun": ">=1.0.0"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist",
     "prepublishOnly": "bun run clean && bun run build",
     "dev": "bun run build --watch"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
     "typescript": ">=5"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
   }
 }
