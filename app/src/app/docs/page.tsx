@@ -38,7 +38,7 @@ export default function DocsPage() {
                 <p className="text-base text-white/80">2) Create an instance (no overrides)</p>
                 <CodeBlock
                   language="ts"
-                  code={`import { CipherSDK } from '@cipher/sdk'\n\nconst sdk = new CipherSDK()`}
+                  code={`import { CipherSDK } from '@ifeelsam/cipher-sdk'\n\nconst sdk = new CipherSDK()`}
                 />
                 <p className="text-base text-white/80">3) (Optional) Override baseUrl or apiKey</p>
                 <CodeBlock

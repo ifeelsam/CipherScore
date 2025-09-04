@@ -1,14 +1,17 @@
-# @cipher/sdk (local)
+# @cipher/sdk
 
-A minimal TypeScript SDK for the Cipher backend.
+A minimal TypeScript SDK for the CipherScore API.
 
-## Install (local)
+## Install
 
-Add to your monorepo workspace and build:
-
+Using Bun (preferred):
 ```bash
-bun install
-bun run build
+bun add @ifeelsam/cipher-sdk
+```
+
+Using npm:
+```bash
+npm install @ifeelsam/cipher-sdk
 ```
 
 ## Usage
@@ -17,14 +20,14 @@ bun run build
 import { CipherSDK } from '@cipher/sdk'
 
 const sdk = new CipherSDK({
-  baseUrl: 'http://localhost:3000',
-  apiKey: 'cypher_...'
+  // default base is 'https://api.cipherscore.xyz'
+  apiKey: process.env.CIPHERSCORE_API_KEY!
 })
 
 // Wallet-only mode
 const r1 = await sdk.calculateFromWallet('MovHj25KabjUuoYRGMWHsGxHjb1JgCLdefbVrPFQwwJ')
 
-// Manual mode
+// Manual metrics mode
 const r2 = await sdk.calculateFromMetrics({
   wallet_age_days: 365,
   transaction_count: 120,
@@ -46,4 +49,4 @@ const status = await sdk.walletStatus('B66RQN7Ptrt4G11fHZq8dJdw1kNbJGZ6dxVYaHXZn
 bun run build
 ```
 
-This will emit `dist/` with CJS/ESM typings (ESM JS output).
+This will emit `dist/` with ESM JS and `.d.ts` types.
