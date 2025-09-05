@@ -36,9 +36,7 @@ export function WalletAuthGuard({ children }: WalletAuthGuardProps) {
                   background: "linear-gradient(45deg, #8A2BE2 0%, #00FFFF 100%)" 
                 }}
               >
-                <svg className="h-8 w-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 9.74s9-4.19 9-9.74V7l-10-5z"/>
-                </svg>
+                <img src="/favicon.png" alt="CipherScore Icon" className="h-13 w-13" />
               </div>
               <h1 className="text-2xl font-bold text-white mb-2">Connect Your Wallet</h1>
               <p className="text-white/70">
