@@ -25,7 +25,8 @@ export function NavItem({ href, label, icon: Icon, collapsed, badge }: NavItemPr
         href={href}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "group relative flex items-center gap-3 rounded-xl px-3 py-2 transition",
+          "group relative flex items-center rounded-xl transition",
+          collapsed ? "w-full justify-center px-0 py-2" : "px-3 py-2 gap-3",
           "text-white/70 hover:text-white",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0",
           // ring uses accent teal
@@ -45,14 +46,14 @@ export function NavItem({ href, label, icon: Icon, collapsed, badge }: NavItemPr
         <span
           className={cn(
             "text-sm transition-opacity",
-            collapsed ? "opacity-0 pointer-events-none select-none" : "opacity-100",
+            collapsed ? "sr-only" : "opacity-100",
           )}
         >
           {label}
         </span>
 
         {/* Optional badge (e.g., low credits dot) */}
-        {badge ? <span className="ml-auto">{badge}</span> : null}
+        {badge ? <span className={cn("ml-auto", collapsed && "hidden")}>{badge}</span> : null}
       </Link>
     </li>
   )
