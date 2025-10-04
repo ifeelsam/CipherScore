@@ -200,7 +200,7 @@ async function calculate_credit_score_on_chain(metrics: WalletMetrics): Promise<
 
     // Setup encryption
     console.log("Setting up encryption...");
-    const privateKey = x25519.utils.randomPrivateKey();
+    const privateKey = x25519.utils.randomSecretKey();
     const publicKey = x25519.getPublicKey(privateKey);
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);

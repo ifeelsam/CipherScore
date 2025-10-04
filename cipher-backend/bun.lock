@@ -4,7 +4,7 @@
     "": {
       "name": "cipher-backend",
       "dependencies": {
-        "@arcium-hq/client": "^0.2.0",
+        "@arcium-hq/client": "0.3.0",
         "@coral-xyz/anchor": "^0.31.1",
         "@prisma/client": "^6.15.0",
         "@solana/web3.js": "^1.98.4",
@@ -28,7 +28,7 @@
     },
   },
   "packages": {
-    "@arcium-hq/client": ["@arcium-hq/client@0.2.0", "", { "dependencies": { "@coral-xyz/anchor": "0.31", "@noble/curves": "^1.8.1", "@noble/hashes": "^1.7.1", "@solana/web3.js": "^1.95.4" } }, "sha512-mKEbrkDdbDpO825WogX3KEV4XyRKUhWEKbq5uhmF6EErXZY82GePQuZagc+axCNdiKbTnFHpZc6FZ6JT91ZPkw=="],
+    "@arcium-hq/client": ["@arcium-hq/client@0.3.0", "", { "dependencies": { "@coral-xyz/anchor": "0.31", "@noble/curves": "^1.9.5", "@noble/hashes": "^1.7.1", "@solana/web3.js": "^1.95.4" } }, "sha512-iruU/StNbjb3iOkOo6jPYCSsBY8wUdNLf/YMY0CaSy4T4oIuPFirA0F9f1W+i2Md0aNLdhgXPa6oTbel/reY+w=="],
 
     "@babel/runtime": ["@babel/runtime@7.28.3", "", {}, "sha512-9uIQ10o0WGdpP6GDhXcdOJPJuDgFtIDtN/9+ArJQ2NAfAmiuhTQdzkaTGR33v43GYS2UrSA0eX2pPPHoFVvpxA=="],
 

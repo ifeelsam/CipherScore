@@ -145,7 +145,7 @@ describe("CipherScore", () => {
         Array.from(publicKey),
         new anchor.BN(deserializeLE(nonce).toString())
       )
-      .accountsStrict({
+      .accountsPartial({
         payer: owner.publicKey,
         wallet: testWallet.publicKey,
         creditAccount: creditAccountpub,
