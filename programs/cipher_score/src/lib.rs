@@ -13,112 +13,6 @@ declare_id!("5ggHxPgEUEn8rJgjZwJSS946BCr9nWAPyr5RzPgdKdSx");
 pub use errors::ErrorCode;
 use anchor_lang::Discriminator;
 
-
-#[arcium_callback(encrypted_ix = "calculate_credit_score")]
-pub fn calculate_credit_score_callback(
-    ctx: Context<ScoreCallback>,
-    output: ComputationOutputs<CalculateCreditScoreOutput>,
-) -> Result<()> {
-    let score = match output {
-        ComputationOutputs::Success(CalculateCreditScoreOutput { field_0 }) => field_0,
-        _ => return Err(ErrorCode::CalculationFailed.into()),
-    };
-    
-    let credit_account = &mut ctx.accounts.credit_account;
-    credit_account.current_score = score;
-    credit_account.score_timestamp = Clock::get()?.unix_timestamp;
-    
-    // Determine risk level
-    credit_account.risk_level = if score >= 700 {
-        RiskLevel::Low
-    } else if score >= 500 {
-        RiskLevel::Medium
-    } else {
-        RiskLevel::High
-    };
-    
-    emit!(ScoreCalculated {
-        wallet: credit_account.wallet,
-        score,
-        risk_level: credit_account.risk_level.clone(),
-    });
-    
-    Ok(())
-}
-
-pub fn share_score_with(
-    ctx: Context<ShareScore>,
-    computation_offset: u64,
-    receiver_pubkey: [u8; 32],
-    receiver_nonce: u128,
-    sender_pubkey: [u8; 32],
-    sender_nonce: u128,
-) -> Result<()> {
-    let credit_account = &ctx.accounts.credit_account;
-    ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
-    // Ensure score is recent (within 7 days)
-    let current_time = Clock::get()?.unix_timestamp;
-    require!(
-        current_time - credit_account.score_timestamp < 604800,
-        ErrorCode::ScoreExpired
-    );
-    
-    let args = vec![
-        // Receiver info
-        Argument::ArcisPubkey(receiver_pubkey),
-        Argument::PlaintextU128(receiver_nonce),
-        // Sender info
-        Argument::ArcisPubkey(sender_pubkey),
-        Argument::PlaintextU128(sender_nonce),
-        // Metrics
-        Argument::EncryptedU32(credit_account.encrypted_metrics.wallet_age_days),
-        Argument::EncryptedU32(credit_account.encrypted_metrics.transaction_count),
-        Argument::EncryptedU64(credit_account.encrypted_metrics.total_volume_usd),
-        Argument::EncryptedU16(credit_account.encrypted_metrics.unique_protocols),
-        Argument::EncryptedU16(credit_account.encrypted_metrics.defi_positions),
-        Argument::EncryptedU16(credit_account.encrypted_metrics.nft_count),
-        Argument::EncryptedU16(credit_account.encrypted_metrics.failed_txs),
-        Argument::EncryptedU64(credit_account.encrypted_metrics.sol_balance),
-    ];
-    
-    queue_computation(
-        ctx.accounts,
-        computation_offset,
-        args,
-        None,
-        vec![ShareCallback::callback_ix(&[])],
-    )?;
-    
-    emit!(ScoreShared {
-        wallet: credit_account.wallet,
-        shared_with: ctx.accounts.receiver.key(),
-        timestamp: current_time,
-    });
-    
-    Ok(())
-}
-
-    /// Callback for shared score
-    #[arcium_callback(encrypted_ix = "calculate_and_share_score")]
-    pub fn calculate_and_share_score_callback(
-        ctx: Context<ShareCallback>,
-        output: ComputationOutputs<CalculateAndShareScoreOutput>,
-    ) -> Result<()> {
-        let encrypted_report = match output {
-            ComputationOutputs::Success(CalculateAndShareScoreOutput { field_0 }) => field_0,
-            _ => return Err(ErrorCode::SharingFailed.into()),
-        };
-        
-        emit!(EncryptedScoreShared {
-            nonce: encrypted_report.nonce.to_le_bytes(),
-            encrypted_score: encrypted_report.ciphertexts[0],
-            encrypted_risk_level: encrypted_report.ciphertexts[1],
-        });
-        
-        Ok(())
-    }
-
-
 // Account Structures
 #[account]
 #[derive(InitSpace)]
@@ -222,7 +116,7 @@ pub struct SubmitAndCalculate<'info> {
 
 #[callback_accounts("calculate_credit_score")]
 #[derive(Accounts)]
-pub struct ScoreCallback<'info> {
+pub struct CalculateCreditScoreCallback<'info> {
     pub arcium_program: Program<'info, Arcium>,
     #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_CALCULATE))]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
@@ -279,7 +173,7 @@ pub struct ShareScore<'info> {
 
 #[callback_accounts("calculate_and_share_score")]
 #[derive(Accounts)]
-pub struct ShareCallback<'info> {
+pub struct CalculateAndShareScoreCallback<'info> {
     pub arcium_program: Program<'info, Arcium>,
     #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_SHARE))]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
@@ -386,7 +280,7 @@ pub mod cipher_score {
             computation_offset,
             args,
             None,
-            vec![ScoreCallback::callback_ix(&[])],
+            vec![CalculateCreditScoreCallback::callback_ix(&[])],
         )?;
         
         emit!(ScoreCalculationStarted {
@@ -396,4 +290,109 @@ pub mod cipher_score {
         
         Ok(())
     }
+
+    #[arcium_callback(encrypted_ix = "calculate_credit_score")]
+    pub fn calculate_credit_score_callback(
+        ctx: Context<CalculateCreditScoreCallback>,
+        output: ComputationOutputs<CalculateCreditScoreOutput>,
+    ) -> Result<()> {
+        let score = match output {
+            ComputationOutputs::Success(CalculateCreditScoreOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::CalculationFailed.into()),
+        };
+        
+        let credit_account = &mut ctx.accounts.credit_account;
+        credit_account.current_score = score;
+        credit_account.score_timestamp = Clock::get()?.unix_timestamp;
+        
+        // Determine risk level
+        credit_account.risk_level = if score >= 700 {
+            RiskLevel::Low
+        } else if score >= 500 {
+            RiskLevel::Medium
+        } else {
+            RiskLevel::High
+        };
+        
+        emit!(ScoreCalculated {
+            wallet: credit_account.wallet,
+            score,
+            risk_level: credit_account.risk_level.clone(),
+        });
+        
+        Ok(())
+    }
+
+    pub fn share_score_with(
+        ctx: Context<ShareScore>,
+        computation_offset: u64,
+        receiver_pubkey: [u8; 32],
+        receiver_nonce: u128,
+        sender_pubkey: [u8; 32],
+        sender_nonce: u128,
+    ) -> Result<()> {
+        let credit_account = &ctx.accounts.credit_account;
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+        // Ensure score is recent (within 7 days)
+        let current_time = Clock::get()?.unix_timestamp;
+        require!(
+            current_time - credit_account.score_timestamp < 604800,
+            ErrorCode::ScoreExpired
+        );
+        
+        let args = vec![
+            // Receiver info
+            Argument::ArcisPubkey(receiver_pubkey),
+            Argument::PlaintextU128(receiver_nonce),
+            // Sender info
+            Argument::ArcisPubkey(sender_pubkey),
+            Argument::PlaintextU128(sender_nonce),
+            // Metrics
+            Argument::EncryptedU32(credit_account.encrypted_metrics.wallet_age_days),
+            Argument::EncryptedU32(credit_account.encrypted_metrics.transaction_count),
+            Argument::EncryptedU64(credit_account.encrypted_metrics.total_volume_usd),
+            Argument::EncryptedU16(credit_account.encrypted_metrics.unique_protocols),
+            Argument::EncryptedU16(credit_account.encrypted_metrics.defi_positions),
+            Argument::EncryptedU16(credit_account.encrypted_metrics.nft_count),
+            Argument::EncryptedU16(credit_account.encrypted_metrics.failed_txs),
+            Argument::EncryptedU64(credit_account.encrypted_metrics.sol_balance),
+        ];
+        
+        queue_computation(
+            ctx.accounts,
+            computation_offset,
+            args,
+            None,
+            vec![CalculateAndShareScoreCallback::callback_ix(&[])],
+        )?;
+        
+        emit!(ScoreShared {
+            wallet: credit_account.wallet,
+            shared_with: ctx.accounts.receiver.key(),
+            timestamp: current_time,
+        });
+        
+        Ok(())
+    }
+
+    /// Callback for shared score
+    #[arcium_callback(encrypted_ix = "calculate_and_share_score")]
+    pub fn calculate_and_share_score_callback(
+        ctx: Context<CalculateAndShareScoreCallback>,
+        output: ComputationOutputs<CalculateAndShareScoreOutput>,
+    ) -> Result<()> {
+        let encrypted_report = match output {
+            ComputationOutputs::Success(CalculateAndShareScoreOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::SharingFailed.into()),
+        };
+        
+        emit!(EncryptedScoreShared {
+            nonce: encrypted_report.nonce.to_le_bytes(),
+            encrypted_score: encrypted_report.ciphertexts[0],
+            encrypted_risk_level: encrypted_report.ciphertexts[1],
+        });
+        
+        Ok(())
+    }
+
 }
