@@ -8,7 +8,7 @@ const COMP_DEF_OFFSET_SHARE: u32 = comp_def_offset("calculate_and_share_score");
 const UPDATE_COOLDOWN: i64 = 0;
 const SIGN_PDA_SEED: &[u8] = b"sign";
 
-declare_id!("5ggHxPgEUEn8rJgjZwJSS946BCr9nWAPyr5RzPgdKdSx");
+declare_id!("EN1WDy7UaNUVKRN45QPj2LqdiEdsTmf6WRgH2j84DHPx");
 
 pub use errors::ErrorCode;
 use anchor_lang::Discriminator;

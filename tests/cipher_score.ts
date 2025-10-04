@@ -76,7 +76,7 @@ describe("CipherScore", () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
     // Setup encryption
-    const privateKey = x25519.utils.randomPrivateKey();
+    const privateKey = x25519.utils.randomSecretKey();
     const publicKey = x25519.getPublicKey(privateKey);
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
@@ -201,7 +201,7 @@ describe("CipherScore", () => {
   it("calculates credit score for low-quality wallet", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
-    const privateKey = x25519.utils.randomPrivateKey();
+    const privateKey = x25519.utils.randomSecretKey();
     const publicKey = x25519.getPublicKey(privateKey);
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
@@ -307,7 +307,7 @@ describe("CipherScore", () => {
   it("calculates credit score for medium-quality wallet", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
-    const privateKey = x25519.utils.randomPrivateKey();
+    const privateKey = x25519.utils.randomSecretKey();
     const publicKey = x25519.getPublicKey(privateKey);
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
