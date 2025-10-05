@@ -280,6 +280,10 @@ describe("CipherScore", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("calculate_credit_score")).readUInt32LE()
         ),
+        poolAccount: new PublicKey("7MGSS4iKNM4sVib7bDZDJhVqB6EcchPwVnTKenCY1jt3"),
+        clockAccount: new PublicKey("FHriyvoZotYiFnbUzKFjzRSb2NiaC8RPWY7jtKuKhg65"),
+        systemProgram: anchor.web3.SystemProgram.programId,
+        arciumProgram: getArciumProgAddress(),
       })
       .signers([owner, testWallet])
       .rpc({ commitment: "confirmed" });
@@ -383,6 +387,10 @@ describe("CipherScore", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("calculate_credit_score")).readUInt32LE()
         ),
+        poolAccount: new PublicKey("7MGSS4iKNM4sVib7bDZDJhVqB6EcchPwVnTKenCY1jt3"),
+        clockAccount: new PublicKey("FHriyvoZotYiFnbUzKFjzRSb2NiaC8RPWY7jtKuKhg65"),
+        systemProgram: anchor.web3.SystemProgram.programId,
+        arciumProgram: getArciumProgAddress(),
       })
       .signers([owner, testWallet])
       .rpc({ commitment: "confirmed" });

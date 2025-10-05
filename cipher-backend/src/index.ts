@@ -10,8 +10,6 @@ import {
   getCompDefAccOffset,
   getArciumAccountBaseSeed,
   getArciumProgAddress,
-  uploadCircuit,
-  buildFinalizeCompDefTx,
   RescueCipher,
   deserializeLE,
   getClusterAccAddress,
