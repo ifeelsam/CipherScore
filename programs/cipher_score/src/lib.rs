@@ -6,7 +6,6 @@ use arcium_anchor::prelude::*;
 const COMP_DEF_OFFSET_CALCULATE: u32 = comp_def_offset("calculate_credit_score");
 const COMP_DEF_OFFSET_SHARE: u32 = comp_def_offset("calculate_and_share_score");
 const UPDATE_COOLDOWN: i64 = 0;
-const SIGN_PDA_SEED: &[u8] = b"sign";
 
 declare_id!("EN1WDy7UaNUVKRN45QPj2LqdiEdsTmf6WRgH2j84DHPx");
 
@@ -227,7 +226,7 @@ pub mod cipher_score {
             true,
             0,
             Some(CircuitSource::OffChain(OffChainCircuitSource {
-            source: "https://pub-89039ebb86fd417d97a5421a9d268eb8.r2.dev/calculate_credit_score_testnet.arcis".to_string(),
+            source: "https://pub-addba8fd4af94067917c8fbeb155d682.r2.dev/calculate_credit_score_testnet.arcis".to_string(),
             hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
             })),
             None,
