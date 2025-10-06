@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-cipher_score = "EN1WDy7UaNUVKRN45QPj2LqdiEdsTmf6WRgH2j84DHPx"
+cipher_score = "8wz5gTHbBMhFqufga8GzWJXf3qLP3RMVFEGAybJc8upt"
 
 [registry]
 url = "https://api.apr.dev"
@@ -17,3 +17,17 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+[test]
+startup_wait = 5000
+shutdown_wait = 2000
+upgradeable = false
+
+[[test.genesis]]
+address = "BKck65TgoKRokMjQM3datB9oRwJ8rAj2jxPXvHXUvcL6"
+program = "/home/sam/Projects/arcium/CipherScore/artifacts/arcium_program_0.3.0.so"
+
+[test.validator]
+bind_address = "0.0.0.0"
+ledger = ".anchor/test-ledger"
+rpc_port = 8899
