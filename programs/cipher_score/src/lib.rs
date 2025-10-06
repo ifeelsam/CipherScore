@@ -213,7 +213,7 @@ pub struct EncryptedScoreShared {
 pub mod cipher_score {
     use std::vec;
 
-    use arcium_client::idl::arcium::types::{CircuitSource, OffChainCircuitSource};
+    use arcium_client::idl::arcium::types::{CallbackAccount, CircuitSource, OffChainCircuitSource};
 
 
     use super::*;
@@ -278,7 +278,12 @@ pub mod cipher_score {
             computation_offset,
             args,
             None,
-            vec![CalculateCreditScoreCallback::callback_ix(&[])],
+            vec![CalculateCreditScoreCallback::callback_ix(&[
+                CallbackAccount{
+                    pubkey: ctx.accounts.credit_account.key(),
+                    is_writable: true,
+                }
+            ])],
         )?;
         
         emit!(ScoreCalculationStarted {
