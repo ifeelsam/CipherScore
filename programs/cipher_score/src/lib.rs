@@ -7,7 +7,7 @@ const COMP_DEF_OFFSET_CALCULATE: u32 = comp_def_offset("calculate_credit_score")
 const COMP_DEF_OFFSET_SHARE: u32 = comp_def_offset("calculate_and_share_score");
 const UPDATE_COOLDOWN: i64 = 0;
 
-declare_id!("8wz5gTHbBMhFqufga8GzWJXf3qLP3RMVFEGAybJc8upt");
+declare_id!("FThMnkXz2PFR3TmfBtM2WfeJvMcxRGotqMX3PJXoNDFj");
 
 pub use errors::ErrorCode;
 use anchor_lang::Discriminator;
