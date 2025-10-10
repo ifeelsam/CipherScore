@@ -213,44 +213,44 @@ export default function Page() {
         <Sidebar />
 
         {/* Content */}
-        <section className="flex-1">
-          <header className="sticky top-0 z-10 border-b border-white/10 bg-[#121212]/80 px-6 py-4 backdrop-blur">
-            <div className="mx-auto flex max-w-6xl items-center justify-between">
-              <div>
-                <h1 className="text-pretty text-lg font-semibold text-white">Welcome back, {displayName}</h1>
-                <p className="text-sm text-white/70">Your API is performing well today</p>
+        <section className="flex-1 min-w-0">
+          <header className="sticky top-0 z-10 border-b border-white/10 bg-[#121212]/80 px-4 md:px-6 py-4 backdrop-blur">
+            <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+              <div className="min-w-0 pl-16 md:pl-0">
+                <h1 className="text-pretty text-base md:text-lg font-semibold text-white truncate">Welcome back, {displayName}</h1>
+                <p className="text-xs md:text-sm text-white/70">Your API is performing well today</p>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
                 <a
                   href="/docs"
-                  className="rounded-full px-4 py-2 text-sm font-medium transition"
+                  className="hidden sm:block rounded-full px-3 md:px-4 py-2 text-xs md:text-sm font-medium transition whitespace-nowrap"
                   style={{
                     color: "#00FFFF",
                     border: "1px solid #00FFFF80",
                     background: "transparent",
                   }}
                 >
-                  View API Docs
+                  API Docs
                 </a>
                 <a
                   href="/settings"
-                  className="rounded-full bg-[#8A2BE2] px-4 py-2 text-sm font-medium text-white shadow-md transition hover:shadow-[0_0_24px_rgba(138,43,226,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00FFFF]/60"
+                  className="rounded-full bg-[#8A2BE2] px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-white shadow-md transition hover:shadow-[0_0_24px_rgba(138,43,226,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00FFFF]/60 whitespace-nowrap"
                 >
-                  Account Settings
+                  Settings
                 </a>
               </div>
             </div>
           </header>
 
-        <div className="mx-auto max-w-6xl space-y-6 p-6">
+        <div className="mx-auto max-w-6xl space-y-4 md:space-y-6 p-4 md:p-6 pb-20 md:pb-6">
           {/* Placeholder cards to show palette and radius */}
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-4 md:gap-6 md:grid-cols-2">
             <div
-              className="rounded-2xl p-6 shadow-sm transition hover:-translate-y-[1px] hover:shadow-[0_0_24px_rgba(138,43,226,0.25)]"
+              className="rounded-xl md:rounded-2xl p-4 md:p-6 shadow-sm transition hover:-translate-y-[1px] hover:shadow-[0_0_24px_rgba(138,43,226,0.25)]"
               style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}
             >
-              <p className="text-sm text-white/70">Free Credits</p>
-              <h2 className="mt-2 text-3xl font-semibold text-white">
+              <p className="text-xs md:text-sm text-white/70">Free Credits</p>
+              <h2 className="mt-2 text-2xl md:text-3xl font-semibold text-white">
                 {loadingUsage ? "—" : `${usage.remaining} left`}
               </h2>
               {/* Progress rail */}
@@ -268,13 +268,13 @@ export default function Page() {
                   aria-valuemax={100}
                 />
               </div>
-              <div className="mt-3 flex items-center justify-between">
+              <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                 <span className="text-xs text-white/60">
                   {daysUntilReset === null ? "" : `Resets in ${daysUntilReset} day${daysUntilReset === 1 ? "" : "s"}`}
                 </span>
                 <a
                   href="/subscription"
-                  className="rounded-full bg-[#8A2BE2] px-5 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:shadow-[0_0_16px_rgba(138,43,226,0.35)]"
+                  className="rounded-full bg-[#8A2BE2] px-4 md:px-5 py-1.5 text-xs md:text-sm font-semibold text-white shadow-sm transition hover:shadow-[0_0_16px_rgba(138,43,226,0.35)] whitespace-nowrap"
                 >
                   Get More Credits
                 </a>
@@ -282,11 +282,11 @@ export default function Page() {
             </div>
 
             <div
-              className="rounded-2xl p-6 shadow-sm transition hover:-translate-y-[1px] hover:shadow-[0_0_24px_rgba(138,43,226,0.25)]"
+              className="rounded-xl md:rounded-2xl p-4 md:p-6 shadow-sm transition hover:-translate-y-[1px] hover:shadow-[0_0_24px_rgba(138,43,226,0.25)]"
               style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}
             >
-              <p className="text-sm text-white/70">Premium Credits</p>
-              <h2 className="mt-2 text-3xl font-semibold text-white">Unlimited</h2>
+              <p className="text-xs md:text-sm text-white/70">Premium Credits</p>
+              <h2 className="mt-2 text-2xl md:text-3xl font-semibold text-white">Unlimited</h2>
               <div className="mt-4 h-2 w-full rounded-full bg-white/10">
                 <div
                   className="h-2 w-[6%] rounded-full"
@@ -300,11 +300,11 @@ export default function Page() {
                   aria-valuemax={100}
                 />
               </div>
-              <div className="mt-3 flex items-center justify-between">
+              <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                 <span className="text-xs text-white/60">Next billing: Feb 15</span>
                 <a
                   href="/subscription"
-                  className="rounded-full px-5 py-1.5 text-sm font-semibold transition"
+                  className="rounded-full px-4 md:px-5 py-1.5 text-xs md:text-sm font-semibold transition whitespace-nowrap"
                   style={{
                     color: "#00FFFF",
                     border: "1px solid #00FFFF80",
@@ -317,27 +317,27 @@ export default function Page() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-3">
             <div
-              className="rounded-xl p-4"
+              className="rounded-lg md:rounded-xl p-3 md:p-4"
               style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}
             >
               <p className="text-xs text-white/60">API Calls This Month</p>
-              <p className="mt-1 text-xl font-semibold text-white">{usage.used}</p>
+              <p className="mt-1 text-lg md:text-xl font-semibold text-white">{usage.used}</p>
             </div>
             <div
-              className="rounded-xl p-4"
+              className="rounded-lg md:rounded-xl p-3 md:p-4"
               style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}
             >
               <p className="text-xs text-white/60">Last Request</p>
-              <p className="mt-1 text-xl font-semibold text_white">—</p>
+              <p className="mt-1 text-lg md:text-xl font-semibold text_white">—</p>
             </div>
             <div
-              className="rounded-xl p-4"
+              className="rounded-lg md:rounded-xl p-3 md:p-4"
               style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}
             >
               <p className="text-xs text-white/60">Success Rate</p>
-              <p className="mt-1 text-xl font-semibold text-white">—</p>
+              <p className="mt-1 text-lg md:text-xl font-semibold text-white">—</p>
             </div>
           </div>
         </div>

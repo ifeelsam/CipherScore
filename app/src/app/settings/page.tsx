@@ -19,17 +19,17 @@ export default function SettingsPage() {
       <Sidebar />
 
       {/* Content */}
-      <section className="flex-1">
-        <header className="sticky top-0 z-10 border-b border-white/10 bg-[#121212]/80 px-6 py-4 backdrop-blur">
+      <section className="flex-1 min-w-0">
+        <header className="sticky top-0 z-10 border-b border-white/10 bg-[#121212]/80 px-4 md:px-6 py-4 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center justify-between">
-            <div>
-              <h1 className="text-pretty text-lg font-semibold text-white">Settings</h1>
-              <p className="text-sm text-white/70">Manage your account and preferences</p>
+            <div className="pl-16 md:pl-0">
+              <h1 className="text-pretty text-base md:text-lg font-semibold text-white">Settings</h1>
+              <p className="text-xs md:text-sm text-white/70">Manage your account and preferences</p>
             </div>
           </div>
         </header>
 
-        <div className="mx-auto max-w-6xl space-y-6 p-6">
+        <div className="mx-auto max-w-6xl space-y-4 md:space-y-6 p-4 md:p-6 pb-20 md:pb-6">
           {/* Account */}
           <ProfileCard />
 
@@ -109,9 +109,9 @@ function ProfileCard() {
                 <Input id="email" type="email" value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} placeholder="developer@cipherscore.dev" className="text-white placeholder:text-white/40" />
               </div>
             </div>
-            <div className="mt-4 flex justify-end">
+              <div className="mt-4 flex justify-end">
               <Button
-                className="rounded-full bg-[#8A2BE2] px-4 text-white shadow-sm transition hover:shadow-[0_0_24px_rgba(138,43,226,0.45)] hover:-translate-y-[1px]"
+                className="rounded-full bg-[#8A2BE2] px-4 md:px-6 text-sm md:text-base text-white shadow-sm transition hover:shadow-[0_0_24px_rgba(138,43,226,0.45)] hover:-translate-y-[1px]"
                 onClick={async () => {
                   if (!sessionToken) return
                   try {
@@ -374,7 +374,7 @@ function ApiKeysManager() {
               )}
 
               {/* Create */}
-              <div className="grid gap-3 sm:grid-cols-[1fr_auto] items-end">
+              <div className="grid gap-3 md:grid-cols-[1fr_auto] items-end">
                 <div className="grid gap-2">
                   <Label htmlFor="keyName" className="text-white/80">New key name</Label>
                   <Input id="keyName" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="Default API Key" className="text-white placeholder:text-white/40" />
@@ -393,10 +393,10 @@ function ApiKeysManager() {
 
               {/* List */}
               <div
-                className="rounded-xl"
+                className="rounded-xl overflow-x-auto"
                 style={{ background: "#121212", border: "1px solid rgba(255,255,255,0.06)" }}
               >
-                <div className="grid grid-cols-12 gap-3 border-b border-white/5 px-3 py-2 text-xs text-white/50">
+                <div className="hidden md:grid grid-cols-12 gap-3 border-b border-white/5 px-3 py-2 text-xs text-white/50">
                   <div className="col-span-4">Name</div>
                   <div className="col-span-3">Key</div>
                   <div className="col-span-2">Status</div>
@@ -410,8 +410,8 @@ function ApiKeysManager() {
                     <div className="px-3 py-3 text-sm text-white/60">No keys yet. Create your first key using the form above.</div>
                   ) : (
                     keys.map((k) => (
-                      <div key={k.id} className="grid grid-cols-12 items-center gap-3 px-3 py-3 text-sm">
-                        <div className="col-span-4">
+                      <div key={k.id} className="grid grid-cols-1 md:grid-cols-12 items-start md:items-center gap-3 px-3 py-3 text-sm border-b md:border-b-0 last:border-b-0 border-white/5">
+                        <div className="md:col-span-4">
                           {renameId === k.id ? (
                             <div className="flex items-center gap-2">
                               <Input
@@ -448,15 +448,15 @@ function ApiKeysManager() {
                           )}
                           <div className="mt-1 text-xs text-white/50">Created {new Date(k.createdAt).toLocaleDateString()}</div>
                         </div>
-                        <div className="col-span-3">
+                        <div className="md:col-span-3">
                           <div className="truncate text-white/80">{k.keyPreview}</div>
                           <div className="text-xs text-white/50">Full key is shown only once when created</div>
                         </div>
-                        <div className="col-span-2">
+                        <div className="md:col-span-2">
                           <span className="text-white/80">{k.isActive ? "Active" : "Inactive"}</span>
                         </div>
-                        <div className="col-span-2 text-white/80">{k.usageCount}</div>
-                        <div className="col-span-1 text-right">
+                        <div className="md:col-span-2 text-white/80"><span className="md:hidden text-xs text-white/50">Usage: </span>{k.usageCount}</div>
+                        <div className="md:col-span-1 md:text-right">
                           <button
                             className="rounded-full px-3 text-xs font-medium transition disabled:opacity-50 hover:-translate-y-[1px] hover:shadow-[0_0_16px_rgba(0,255,255,0.25)]"
                             style={{ color: "#00FFFF", border: "1px solid #00FFFF80", background: "transparent", height: "28px" }}
