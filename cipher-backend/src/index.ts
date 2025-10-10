@@ -249,7 +249,7 @@ async function calculate_credit_score_on_chain(metrics: WalletMetrics): Promise<
     });
 
     const computationOffset = new anchor.BN(randomBytes(8), "hex");
-    const arciumEnv = getClusterAccAddress(1116522165);
+    const arciumEnv = getClusterAccAddress(1078779259);
     console.log("Cluster Account:", arciumEnv.toString());
     
     // Debug all the accounts we're using
