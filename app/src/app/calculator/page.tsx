@@ -240,7 +240,7 @@ export default function CreditScoreCalculatorPage() {
                     onClick={checkWalletStatus}
                     disabled={!walletAddress.trim()}
                     variant="outline"
-                    className="border-[#00FFFF]/30 text-[#00FFFF] hover:bg-[#00FFFF]/10"
+                    className="bg-[#00FFFF]/10 border-[#00FFFF]/30 text-[#00FFFF] hover:bg-[#00FFFF]/70"
                   >
                     <Activity className="mr-2 h-4 w-4" />
                     Check Status
