@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
-import { Home, BarChart3, CreditCard, BookOpen, Settings, LogOut, Menu, X } from "lucide-react"
+import { Home, BarChart3, CreditCard, BookOpen, Settings, LogOut, Menu, X, Calculator } from "lucide-react"
 import { NavItem } from "./nav-item"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui"
@@ -174,6 +174,9 @@ export function Sidebar() {
           </div>
           <div onClick={() => isMobile && setMobileMenuOpen(false)}>
             <NavItem href="/subscription" label="Subscription" icon={CreditCard} collapsed={!isMobile && collapsed} />
+          </div>
+          <div onClick={() => isMobile && setMobileMenuOpen(false)}>
+            <NavItem href="/calculator" label="Credit Calculator" icon={Calculator} collapsed={!isMobile && collapsed} />
           </div>
           <div onClick={() => isMobile && setMobileMenuOpen(false)}>
             <NavItem href="/docs" label="API Docs" icon={BookOpen} collapsed={!isMobile && collapsed} />

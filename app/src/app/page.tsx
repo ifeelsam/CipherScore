@@ -243,6 +243,30 @@ export default function Page() {
           </header>
 
         <div className="mx-auto max-w-6xl space-y-4 md:space-y-6 p-4 md:p-6 pb-20 md:pb-6">
+          {/* Credit Score Calculator Card */}
+          <div
+            className="rounded-xl md:rounded-2xl p-4 md:p-6 shadow-sm transition hover:-translate-y-[1px] hover:shadow-[0_0_24px_rgba(138,43,226,0.25)] cursor-pointer"
+            style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}
+            onClick={() => window.location.href = '/calculator'}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg md:text-xl font-semibold text-white mb-2">Credit Score Calculator</h3>
+                <p className="text-sm md:text-base text-white/70">Calculate your Solana wallet credit score instantly</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-[#8A2BE2] to-[#00FFFF] flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
           {/* Placeholder cards to show palette and radius */}
           <div className="grid gap-4 md:gap-6 md:grid-cols-2">
             <div
