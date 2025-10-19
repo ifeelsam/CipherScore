@@ -7,7 +7,6 @@ interface CreditScoreCircleProps {
   score: number
   isLoading?: boolean
   size?: "sm" | "md" | "lg" | "xl"
-  showLabels?: boolean
   className?: string
 }
 
@@ -22,7 +21,6 @@ export function CreditScoreCircle({
   score, 
   isLoading = false, 
   size = "lg", 
-  showLabels = true,
   className 
 }: CreditScoreCircleProps) {
   const [animatedScore, setAnimatedScore] = useState(0)
@@ -44,7 +42,8 @@ export function CreditScoreCircle({
   
   const scoreRange = getScoreRange(score)
   const percentage = Math.min(100, Math.max(0, (score / 850) * 100))
-  const strokeDashoffset = circumference - (percentage / 100) * circumference
+  const animatedPercentage = Math.min(100, Math.max(0, (animatedScore / 850) * 100))
+  const strokeDashoffset = circumference - (animatedPercentage / 100) * circumference
   
   // Animate score on load
   useEffect(() => {
@@ -91,7 +90,7 @@ export function CreditScoreCircle({
               stroke="rgba(255,255,255,0.1)"
               strokeWidth={config.strokeWidth}
             />
-            {/* Controlled loading progress */}
+            {/* Animated loading circle - fill and unfill */}
             <circle
               cx={config.size / 2}
               cy={config.size / 2}
@@ -100,11 +99,10 @@ export function CreditScoreCircle({
               stroke="url(#loadingGradient)"
               strokeWidth={config.strokeWidth}
               strokeDasharray={circumference}
-              strokeDashoffset={circumference * 0.75}
-              className="animate-pulse"
-              style={{ 
-                animationDuration: '2s',
-                strokeDashoffset: circumference * 0.75
+              strokeDashoffset={circumference}
+              strokeLinecap="round"
+              style={{
+                animation: 'fillUnfill 2s ease-in-out infinite'
               }}
             />
             <defs>
@@ -119,9 +117,24 @@ export function CreditScoreCircle({
           {/* Loading text */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <div className="animate-pulse">
-              <div className="text-white/60 text-sm">Calculating...</div>
+              <div className={cn("text-white/60", config.labelSize)}>Calculating...</div>
             </div>
           </div>
+          
+          {/* Add keyframe animation */}
+          <style jsx>{`
+            @keyframes fillUnfill {
+              0% {
+                stroke-dashoffset: ${circumference};
+              }
+              50% {
+                stroke-dashoffset: 0;
+              }
+              100% {
+                stroke-dashoffset: ${circumference};
+              }
+            }
+          `}</style>
         </div>
       </div>
     )
@@ -145,56 +158,6 @@ export function CreditScoreCircle({
             strokeWidth={config.strokeWidth}
           />
           
-          {/* Score range indicators */}
-          {showLabels && (
-            <>
-              {/* Excellent range (750-850) */}
-              <circle
-                cx={config.size / 2}
-                cy={config.size / 2}
-                r={radius + config.strokeWidth / 2 + 8}
-                fill="none"
-                stroke="rgba(16, 185, 129, 0.3)"
-                strokeWidth="2"
-                strokeDasharray={`${circumference * 0.12} ${circumference * 0.88}`}
-                strokeDashoffset={circumference * 0.12}
-              />
-              {/* Good range (650-749) */}
-              <circle
-                cx={config.size / 2}
-                cy={config.size / 2}
-                r={radius + config.strokeWidth / 2 + 8}
-                fill="none"
-                stroke="rgba(251, 191, 36, 0.3)"
-                strokeWidth="2"
-                strokeDasharray={`${circumference * 0.12} ${circumference * 0.88}`}
-                strokeDashoffset={circumference * 0.24}
-              />
-              {/* Fair range (550-649) */}
-              <circle
-                cx={config.size / 2}
-                cy={config.size / 2}
-                r={radius + config.strokeWidth / 2 + 8}
-                fill="none"
-                stroke="rgba(245, 158, 11, 0.3)"
-                strokeWidth="2"
-                strokeDasharray={`${circumference * 0.12} ${circumference * 0.88}`}
-                strokeDashoffset={circumference * 0.36}
-              />
-              {/* Poor range (300-549) */}
-              <circle
-                cx={config.size / 2}
-                cy={config.size / 2}
-                r={radius + config.strokeWidth / 2 + 8}
-                fill="none"
-                stroke="rgba(239, 68, 68, 0.3)"
-                strokeWidth="2"
-                strokeDasharray={`${circumference * 0.52} ${circumference * 0.48}`}
-                strokeDashoffset={circumference * 0.48}
-              />
-            </>
-          )}
-          
           {/* Main progress circle */}
           <circle
             cx={config.size / 2}
@@ -207,22 +170,12 @@ export function CreditScoreCircle({
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
             className={cn(
-              "transition-all duration-1000 ease-out",
-              isAnimating && "drop-shadow-lg"
+              "transition-all duration-1000 ease-out"
             )}
             style={{
               filter: `drop-shadow(0 0 8px ${scoreRange.color}40)`
             }}
           />
-          
-          {/* Gradient definitions */}
-          <defs>
-            <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#8A2BE2" />
-              <stop offset="50%" stopColor={scoreRange.color} />
-              <stop offset="100%" stopColor="#00FFFF" />
-            </linearGradient>
-          </defs>
         </svg>
         
         {/* Score display */}
@@ -233,66 +186,14 @@ export function CreditScoreCircle({
           <div className={cn("text-white/60 transition-all duration-1000", config.labelSize)}>
             Credit Score
           </div>
-          {showLabels && (
-            <div className={cn(
-              "mt-1 px-2 py-1 rounded-full text-xs font-medium transition-all duration-1000",
-              scoreRange.bgColor,
-              scoreRange.textColor
-            )}>
-              {scoreRange.range}
-            </div>
-          )}
-        </div>
-        
-        {/* Range labels */}
-        {showLabels && size !== "sm" && (
-          <div className="absolute inset-0 pointer-events-none">
-            {/* Excellent */}
-            <div 
-              className="absolute text-xs text-green-400 font-medium"
-              style={{
-                top: '8%',
-                left: '50%',
-                transform: 'translateX(-50%)'
-              }}
-            >
-              750+
-            </div>
-            {/* Good */}
-            <div 
-              className="absolute text-xs text-yellow-400 font-medium"
-              style={{
-                top: '25%',
-                right: '8%',
-                transform: 'translateX(50%)'
-              }}
-            >
-              650-749
-            </div>
-            {/* Fair */}
-            <div 
-              className="absolute text-xs text-orange-400 font-medium"
-              style={{
-                bottom: '25%',
-                right: '8%',
-                transform: 'translateX(50%)'
-              }}
-            >
-              550-649
-            </div>
-            {/* Poor */}
-            <div 
-              className="absolute text-xs text-red-400 font-medium"
-              style={{
-                bottom: '8%',
-                left: '50%',
-                transform: 'translateX(-50%)'
-              }}
-            >
-              300-549
-            </div>
+          <div className={cn(
+            "mt-2 px-3 py-1 rounded-full text-xs font-medium transition-all duration-1000",
+            scoreRange.bgColor,
+            scoreRange.textColor
+          )}>
+            {scoreRange.range}
           </div>
-        )}
+        </div>
       </div>
     </div>
   )

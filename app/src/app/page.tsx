@@ -243,27 +243,24 @@ export default function Page() {
           </header>
 
         <div className="mx-auto max-w-6xl space-y-4 md:space-y-6 p-4 md:p-6 pb-20 md:pb-6">
-          {/* Credit Score Calculator Card */}
+          {/* Credit Score Calculator CTA */}
           <div
-            className="rounded-xl md:rounded-2xl p-4 md:p-6 shadow-sm transition hover:-translate-y-[1px] hover:shadow-[0_0_24px_rgba(138,43,226,0.25)] cursor-pointer"
-            style={{ background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.06)" }}
-            onClick={() => window.location.href = '/calculator'}
+            className="rounded-xl md:rounded-2xl p-6 md:p-8 shadow-sm transition hover:-translate-y-[1px] hover:shadow-[0_0_24px_rgba(138,43,226,0.25)]"
+            style={{ background: "linear-gradient(135deg, #1A1A1A 0%, #2A1A3A 100%)", border: "1px solid rgba(138,43,226,0.2)" }}
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg md:text-xl font-semibold text-white mb-2">Credit Score Calculator</h3>
-                <p className="text-sm md:text-base text-white/70">Calculate your Solana wallet credit score instantly</p>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="text-center md:text-left">
+                <h2 className="text-xl md:text-2xl font-semibold text-white mb-2">Calculate Your Credit Score</h2>
+                <p className="text-sm md:text-base text-white/70">
+                  Get instant insights into your Solana wallet's creditworthiness with our advanced scoring algorithm
+                </p>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-[#8A2BE2] to-[#00FFFF] flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
+              <a
+                href="/calculator"
+                className="rounded-full bg-[#8A2BE2] px-6 md:px-8 py-3 text-sm md:text-base font-medium text-white shadow-md transition hover:shadow-[0_0_24px_rgba(138,43,226,0.4)] hover:-translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00FFFF]/60 whitespace-nowrap"
+              >
+                Calculate Now →
+              </a>
             </div>
           </div>
 
