@@ -2,6 +2,9 @@
   "name": "cipher-backend",
   "module": "src/index.ts",
   "type": "module",
+  "scripts": {
+    "dev": "bun --hot run src/index.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
